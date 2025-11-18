@@ -1,0 +1,11 @@
+# Node
+node_modules/
+.env
+/dist
+
+# Quasar
+frontend/node_modules/
+frontend/dist
+
+# Logs
+*.log

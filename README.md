@@ -3,12 +3,12 @@ Web aplikacija za praćenje mandata i rada povjerenstava.
 
 # Inicijalizacija:
 ## Backend
-cd backend
-npm install
+1. cd backend
+2. npm install
 
 ## Frontend
-cd frontend
-npm install
+1. cd frontend
+2. npm install
 
 # Frontend (localhost:9000):
 1. cd quasar-project

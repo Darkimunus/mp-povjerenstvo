@@ -12,10 +12,15 @@
         />
 
         <q-toolbar-title>
-          Quasar App
+          MP Povjerenstvo
         </q-toolbar-title>
 
-        <div>Quasar v{{ $q.version }}</div>
+        <q-btn
+          flat
+          dense
+          label="ODJAVI SE"
+          @click="handleLogout"
+        />
       </q-toolbar>
     </q-header>
 
@@ -47,6 +52,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
 import EssentialLink, { type EssentialLinkProps } from 'components/EssentialLink.vue';
 
 const linksList: EssentialLinkProps[] = [
@@ -95,8 +101,17 @@ const linksList: EssentialLinkProps[] = [
 ];
 
 const leftDrawerOpen = ref(false);
+const router = useRouter();
 
 function toggleLeftDrawer () {
   leftDrawerOpen.value = !leftDrawerOpen.value;
+}
+
+function handleLogout () {
+  // Clear localStorage
+  localStorage.removeItem('user');
+  localStorage.removeItem('token');
+  // Redirect to login
+  void router.push('/login');
 }
 </script>

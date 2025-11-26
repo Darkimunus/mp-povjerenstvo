@@ -2,6 +2,8 @@ import express from "express";
 import cors from "cors";
 import { pool } from "./db.js";
 import { AkademskeGodine } from "./models/akademskeGodine.js";
+import { authController } from "./controllers/authController.js";
+import { verifyToken } from "./middleware/verifyToken.js";
 
 const app = express();
 app.use(cors());
@@ -15,6 +17,18 @@ app.get("/test", async (req, res) => {
   } catch (err) {
     res.status(500).send(err.toString());
   }
+});
+
+// Auth routes
+app.post("/api/auth/register", authController.register);
+app.post("/api/auth/login", authController.login);
+
+// Protected route example
+app.get("/api/profile", verifyToken, async (req, res) => {
+  res.json({
+    message: "Pristup dozvoljen",
+    user: req.user
+  });
 });
 
 app.listen(3000, () =>

@@ -1,43 +1,35 @@
 <template>
-  <q-page class="row items-center justify-evenly">
-    <example-component
-      title="Example component"
-      active
-      :todos="todos"
-      :meta="meta"
-    ></example-component>
+  <q-page class="q-pa-md">
+    <div class="text-h4 q-mb-md">
+      Dobrodošli, {{ userName }}!
+    </div>
+    
+    <q-card class="q-pa-md">
+      <q-card-section>
+        <p>Ovo je glavna stranica aplikacije.</p>
+      </q-card-section>
+    </q-card>
   </q-page>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import type { Todo, Meta } from 'components/models';
-import ExampleComponent from 'components/ExampleComponent.vue';
+import { ref, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 
-const todos = ref<Todo[]>([
-  {
-    id: 1,
-    content: 'ct1'
-  },
-  {
-    id: 2,
-    content: 'ct2'
-  },
-  {
-    id: 3,
-    content: 'ct3'
-  },
-  {
-    id: 4,
-    content: 'ct4'
-  },
-  {
-    id: 5,
-    content: 'ct5'
+const router = useRouter();
+const userName = ref('');
+
+onMounted(() => {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    const user = JSON.parse(userStr);
+    userName.value = `${user.ime_zaposlenika} ${user.prezime_zaposlenika}`;
+  } else {
+    // If no user data, redirect to login
+    void router.push('/login');
   }
-]);
-
-const meta = ref<Meta>({
-  totalCount: 1200
 });
 </script>
+
+<style scoped lang="scss">
+</style>

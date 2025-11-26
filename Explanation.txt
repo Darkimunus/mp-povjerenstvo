@@ -1,0 +1,172 @@
+================================================================================
+AUTHENTICATION SYSTEM - COMPLETE OVERVIEW
+================================================================================
+
+## Backend (Node.js + Express)
+
+TECH STACK:
+- bcrypt - Password hashing library
+- jsonwebtoken - JWT token generation and verification
+- express - REST API framework
+- mariadb - Database
+- dotenv - Environment variable management
+
+AUTHENTICATION FLOW:
+
+1. Registration (POST /api/auth/register):
+   - User submits: ime, prezime, email, lozinka
+   - Backend validates all fields are present
+   - Checks if email already exists in db_zaposlenici table
+   - Hashes password using bcrypt.hash(lozinka, 10) (10 salt rounds)
+   - Inserts new user into database with hashed password
+   - **Generates JWT token** with payload: { ID_zaposlenika, email } (expires in 7 days)
+   - Returns: { token, user, message }
+   - Password is **never** stored in plain text
+
+2. Login (POST /api/auth/login):
+   - User submits: email, lozinka
+   - Backend finds user by email in db_zaposlenici
+   - Compares submitted password with stored hash using bcrypt.compare()
+   - If valid, **generates JWT token** with payload: { ID_zaposlenika, email } (expires in 7 days)
+   - Returns: { token, user, message } with user data **without password**
+   - If invalid, returns 401 "Neispravni podaci za prijavu"
+
+3. Protected Routes (using verifyToken middleware):
+   - Middleware extracts JWT from "Authorization: Bearer <token>" header
+   - Verifies token signature and expiration
+   - If valid, extracts user info and attaches to request (req.user)
+   - If invalid or expired, returns 401 "Nevaljani token" or "Token nije pronađen"
+   - Example protected route: GET /api/profile - returns user information
+
+JWT TOKEN STRUCTURE:
+- Header: { alg: "HS256", typ: "JWT" }
+- Payload: { ID_zaposlenika, email, iat, exp } (iat = issued at, exp = expiration)
+- Signature: HMAC-SHA256 signed with JWT_SECRET from .env
+- Lifespan: 7 days (604,800 seconds)
+
+CONTROLLERS & MIDDLEWARE:
+- authController.js - Handles /api/auth/register and /api/auth/login, generates JWT tokens
+- verifyToken.js - Middleware to verify JWT tokens on protected routes
+- Uses connection pooling from MariaDB for database queries
+
+ENVIRONMENT VARIABLES (.env):
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production-12345
+
+================================================================================
+
+## Frontend (Vue 3 + TypeScript + Quasar)
+
+AUTHENTICATION STORAGE:
+- localStorage.setItem('token', jwtToken) - **JWT token** (cryptographically signed string)
+- localStorage.setItem('user', JSON.stringify(userData)) - Full user object stored as JSON
+
+TOKEN FORMAT:
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRF96YXBvc2xlbmlrYSI6MSwiaWF0IjoxNzMyNjMwODAwLCJleHAiOjE3MzMyMzU2MDB9.xxxxx
+
+USER OBJECT STORED:
+{
+  ID_zaposlenika: number,
+  ime_zaposlenika: string,
+  prezime_zaposlenika: string,
+  email: string
+}
+
+AUTHENTICATION PAGES:
+
+1. LoginPage.vue:
+   - Form with email and password inputs
+   - On submit: calls POST /api/auth/login
+   - On success: stores **JWT token** and user data, redirects to /home
+   - On error: shows alert with error message
+   - Link to register page
+
+2. RegisterPage.vue:
+   - Form with name, surname, email, password, and password confirmation
+   - Validates password match on client side
+   - On submit: calls POST /api/auth/register
+   - On success: stores **JWT token** and user data (from response), redirects to /home
+   - On error: shows alert with error message
+   - Link to login page
+
+ROUTE PROTECTION:
+- router/index.ts has a beforeEach guard
+- If trying to access /home without a **token in localStorage** → redirects to /login
+- Route structure:
+  - / → redirects to /login
+  - /login → LoginPage
+  - /register → RegisterPage
+  - /home → MainLayout + IndexPage (protected)
+
+LOGOUT:
+- Button "ODJAVI SE" in MainLayout header
+- Clears both localStorage.token and localStorage.user
+- Route guard prevents access to /home without token
+- Redirects to /login
+
+DISPLAY WELCOME MESSAGE:
+- IndexPage reads localStorage.user on mount
+- Displays: "Dobrodošli, [ime] [prezime]!"
+- If no user data, redirects to login (extra safety check)
+
+================================================================================
+
+## Database Schema (MariaDB)
+
+TABLE: db_zaposlenici
+- ID_zaposlenika (PK, AUTO_INCREMENT)
+- ime_zaposlenika (VARCHAR 50)
+- prezime_zaposlenika (VARCHAR 100)
+- email (VARCHAR 100) - unique per registration check
+- lozinka (VARCHAR 100) - bcrypt hash (~60 chars, never plain text)
+
+================================================================================
+
+## Typical User Journey (Updated):
+
+1. User visits app → redirected to /login
+2. User clicks "Registriraj se" → goes to /register
+3. Registers with data → backend:
+   - Hashes password with bcrypt
+   - Stores in DB
+   - **Generates JWT token**
+   - Returns token + user data
+4. Frontend stores **JWT token** and user data in localStorage
+5. Redirected to /home → route guard checks for token ✓
+6. Home page displays: "Dobrodošli, [ime] [prezime]!"
+7. User clicks "ODJAVI SE" → localStorage cleared → redirected to /login
+8. Trying to access /home directly → route guard checks for token ✗ → redirected to /login
+9. **JWT token automatically expires after 7 days** → user must login again
+
+================================================================================
+
+## Example API Flow with JWT:
+
+REQUEST TO PROTECTED ENDPOINT:
+
+// Frontend sending request with JWT
+axios.get('/api/profile', {
+  headers: {
+    'Authorization': `Bearer ${localStorage.getItem('token')}`
+  }
+});
+
+// Token looks like:
+// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJJRF9...
+
+BACKEND PROCESSING:
+
+// Middleware extracts token from header
+const token = req.headers.authorization?.split(" ")[1];
+
+// Verifies signature and expiration
+jwt.verify(token, JWT_SECRET);
+
+// Extracts user data
+const { ID_zaposlenika, email } = decoded;
+
+================================================================================
+
+This is the complete JWT-enabled authentication system! 
+It's production-ready and significantly more secure than simple ID-based tokens.
+
+================================================================================

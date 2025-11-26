@@ -31,5 +31,16 @@ export default defineRouter(function (/* { store, ssrContext } */) {
     history: createHistory(process.env.VUE_ROUTER_BASE),
   });
 
+  // Add route guard to protect /home route
+  Router.beforeEach((to, from, next) => {
+    const isAuthenticated = !!localStorage.getItem('token');
+    
+    if (to.path === '/home' && !isAuthenticated) {
+      next('/login');
+    } else {
+      next();
+    }
+  });
+
   return Router;
 });

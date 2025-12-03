@@ -8,62 +8,8 @@ dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET;
 
 export const authController = {
-  register: async (req, res) => {
-    try {
-      const { ime, prezime, email, lozinka } = req.body;
 
-      // Validate input
-      if (!ime || !prezime || !email || !lozinka) {
-        return res.status(400).json({ error: "Sva polja su obavezna" });
-      }
-
-      const conn = await pool.getConnection();
-      try {
-        // Check if email already exists
-        const existingUser = await conn.query(
-          "SELECT * FROM db_zaposlenici WHERE email = ?",
-          [email]
-        );
-
-        if (existingUser.length > 0) {
-          return res.status(409).json({ error: "Email je već registriran" });
-        }
-
-        // Hash password
-        const hashedPassword = await bcrypt.hash(lozinka, 10);
-
-        // Insert new user
-        const result = await conn.query(
-          "INSERT INTO db_zaposlenici (ime_zaposlenika, prezime_zaposlenika, email, lozinka) VALUES (?, ?, ?, ?)",
-          [ime, prezime, email, hashedPassword]
-        );
-
-        const userId = Number(result.insertId);
-
-        // Create JWT token
-        const token = jwt.sign(
-          { ID_zaposlenika: userId, email: email },
-          JWT_SECRET,
-          { expiresIn: "3d" }
-        );
-
-        res.status(201).json({
-          message: "Registracija uspješna",
-          token: token,
-          user: {
-            ID_zaposlenika: userId,
-            ime_zaposlenika: ime,
-            prezime_zaposlenika: prezime,
-            email: email
-          }
-        });
-      } finally {
-        conn.release();
-      }
-    } catch (error) {
-      res.status(500).json({ error: error.message });
-    }
-  },
+    /* PRIJAVA KORISNIKA */    
 
   login: async (req, res) => {
     try {
@@ -119,5 +65,53 @@ export const authController = {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  },
+
+  /* PROMJENA LOZINKE */
+
+  changePassword: async (req, res) => {
+    try {
+      const { email, novaLozinka } = req.body;
+
+      // Validate input
+      if (!email  || !novaLozinka) {
+        return res.status(400).json({ error: "Sva polja su obavezna" });
+      }
+
+      const conn = await pool.getConnection();
+      try {
+        
+        const rows = await conn.query(
+          "SELECT * FROM db_zaposlenici WHERE email = ?",
+          [email]
+        );
+
+        if (rows.length == 0) {
+          return res.status(404).json({ error: "Zaposlenik nije pronađen" });
+        }
+
+        const user = rows[0];
+
+        // Hashiraj novu lozinku
+        const newHash = await bcrypt.hash(novaLozinka, 10);
+
+         // Ažuriraj lozinku
+        await conn.query(
+          "UPDATE db_zaposlenici SET lozinka = ? WHERE email = ?",
+          [newHash, email]
+        );
+
+        return res.json({ message: "Lozinka je uspješno promijenjena!"});
+
+          } finally {
+        conn.release();
+      }
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: error.message });
+    }
   }
+
+
 };

@@ -40,8 +40,8 @@
         </q-form>
 
         <div class="text-center q-mt-md">
-          <span>Nemaš račun? </span>
-          <router-link to="/register" class="text-primary">Registriraj se</router-link>
+          <span>Zaboravljena lozinka? </span>
+          <router-link to="/change-password" class="text-primary">Promijeni lozinku</router-link>
         </div>
       </q-card-section>
 

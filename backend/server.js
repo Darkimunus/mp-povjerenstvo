@@ -20,8 +20,9 @@ app.get("/test", async (req, res) => {
 });
 
 // Auth routes
-app.post("/api/auth/register", authController.register);
+
 app.post("/api/auth/login", authController.login);
+app.post("/api/auth/change-password",  authController.changePassword);
 
 // Protected route example
 app.get("/api/profile", verifyToken, async (req, res) => {

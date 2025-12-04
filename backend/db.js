@@ -8,5 +8,7 @@ export const pool = mariadb.createPool({
   user: "fmatanovi",
   password: "11",
   database: "fmatanovi",
-  connectionLimit: 5
+  connectionLimit: 5,
+
+  bigNumberStrings: true
 });

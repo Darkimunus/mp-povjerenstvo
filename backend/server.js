@@ -5,6 +5,9 @@ import { AkademskeGodine } from "./models/akademskeGodine.js";
 import { authController } from "./controllers/authController.js";
 import { verifyToken } from "./middleware/verifyToken.js";
 
+import {akademskeGodineController} from "./controllers/akademskeGodineController.js";
+
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -31,6 +34,11 @@ app.get("/api/profile", verifyToken, async (req, res) => {
     user: req.user
   });
 });
+
+//ZA AKADEMSKU GODINU
+app.get("/api/akademske-godine", akademskeGodineController.getAll);
+app.get("/api/akademske-godine/:id", akademskeGodineController.getById);
+app.post("/api/akademske-godine", akademskeGodineController.create);
 
 app.listen(3000, () =>
   console.log("Backend server running on http://localhost:3000")

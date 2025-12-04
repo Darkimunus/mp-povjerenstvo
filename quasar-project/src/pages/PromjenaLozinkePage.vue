@@ -64,8 +64,10 @@
 <script setup lang="ts">
 
 import { ref } from "vue";
+import { useRouter } from "vue-router";
 import axios from "axios";
-//import type {AxiosError} from "axios";
+
+const router = useRouter();
 
 const form = ref({
   email: "",
@@ -90,6 +92,9 @@ const handleChangePassword = async () => {
     );
 
     alert("Lozinka uspješno promijenjena!");
+    
+    // Redirect to login page after successful password change
+    await router.push('/login');
 
   }
   catch (error: unknown) {

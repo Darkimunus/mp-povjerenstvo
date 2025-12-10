@@ -22,9 +22,9 @@
 
   <!-- GRID KARTICA AK. GOD. -->
 
-    <div class="row q-col-gutter-md">
+    <div class="row q-col-gutter-md q-mb-md">
       <div
-        v-for="godina in akademskeGodine"
+        v-for="godina in paginatedGodine"
         :key="godina.ID_ak_godina"
         class="col-12 col-sm-6 col-md-4"
       >
@@ -37,6 +37,23 @@
             <div class="text-h6">{{ godina.godina }}</div>
           </q-card-section>
         </q-card>
+      </div>
+    </div>
+
+    <!-- PAGINATION BREADCRUMBS -->
+    <div class="row justify-center q-mb-lg">
+      <div class="pagination-container">
+        <q-btn
+          v-for="page in totalPages"
+          :key="page"
+          :label="page.toString()"
+          :color="page === currentPage ? 'primary' : 'grey-4'"
+          :text-color="page === currentPage ? 'white' : 'grey-8'"
+          size="lg"
+          outline
+          class="q-mx-sm"
+          @click="currentPage = page"
+        />
       </div>
     </div>
 
@@ -68,7 +85,7 @@
 
 <script setup lang="ts">
 
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 
 import axios from "axios";
@@ -84,6 +101,19 @@ interface Godina {
 const akademskeGodine = ref<Godina[]>([]);
 const showCreateDialog = ref(false);
 const newGodina = ref("");
+const currentPage = ref(1);
+const itemsPerPage = 3;
+
+// Computed properties for pagination
+const totalPages = computed(() => {
+  return Math.ceil(akademskeGodine.value.length / itemsPerPage);
+});
+
+const paginatedGodine = computed(() => {
+  const startIndex = (currentPage.value - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  return akademskeGodine.value.slice(startIndex, endIndex);
+});
 
 //učitavanje user-a
 onMounted( async() => {
@@ -182,6 +212,14 @@ const openGodina = async (id: number) => {
 .year-img {
   height: 80px;
   object-fit: contain;
+}
+
+.pagination-container {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
 }
 
 </style>

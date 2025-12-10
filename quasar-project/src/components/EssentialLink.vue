@@ -1,9 +1,7 @@
 <template>
   <q-item
     clickable
-    tag="a"
-    target="_blank"
-    :href="link"
+    @click="handleClick"
   >
     <q-item-section
       v-if="icon"
@@ -20,6 +18,9 @@
 </template>
 
 <script setup lang="ts">
+import { inject } from 'vue';
+import { useRouter } from 'vue-router';
+
 export interface EssentialLinkProps {
   title: string;
   caption?: string;
@@ -27,9 +28,23 @@ export interface EssentialLinkProps {
   icon?: string;
 };
 
-withDefaults(defineProps<EssentialLinkProps>(), {
+const props = withDefaults(defineProps<EssentialLinkProps>(), {
   caption: '',
   link: '#',
   icon: '',
 });
+
+const router = useRouter();
+const closeDrawerFn = inject<() => void>('closeDrawer');
+
+const handleClick = async () => {
+  if (closeDrawerFn) {
+    closeDrawerFn();
+  }
+  
+  // Navigate after closing drawer
+  if (props.link) {
+    await router.push(props.link);
+  }
+};
 </script>

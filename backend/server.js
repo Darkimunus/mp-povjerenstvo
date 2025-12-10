@@ -3,6 +3,7 @@ import cors from "cors";
 import { pool } from "./db.js";
 import { AkademskeGodine } from "./models/akademskeGodine.js";
 import { authController } from "./controllers/authController.js";
+import { zaposlenikovController } from "./controllers/zaposlenikovController.js";
 import { verifyToken } from "./middleware/verifyToken.js";
 
 import {akademskeGodineController} from "./controllers/akademskeGodineController.js";
@@ -34,6 +35,10 @@ app.get("/api/profile", verifyToken, async (req, res) => {
     user: req.user
   });
 });
+
+// Zaposlenici routes
+app.get("/api/zaposlenici/:id", verifyToken, zaposlenikovController.getById);
+app.put("/api/zaposlenici/:id", verifyToken, zaposlenikovController.updateById);
 
 //ZA AKADEMSKU GODINU
 app.get("/api/akademske-godine", akademskeGodineController.getAll);

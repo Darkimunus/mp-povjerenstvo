@@ -31,6 +31,16 @@ const routes: RouteRecordRaw[] = [
   ]
 },
 
+// STRANICA DETALJI POVJERENSTVA
+{
+  path: '/povjerenstvo/:idPovjerenstva',
+  component: () => import('layouts/MainLayout.vue'),
+  children: [
+    { path: '', component: () => import('pages/PovjerenstvoDetaljiPage.vue') }
+  ]
+},
+
+
 ///////////
   {
     path: '/home',

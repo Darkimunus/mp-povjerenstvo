@@ -9,5 +9,16 @@ export const povjerenstvaPoZaposlenikovController = {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  },
+
+  getByPovjerenstvo: async (req, res) => {
+  try {
+    const idPovjerenstva = Number(req.params.idPovjerenstva);
+    const clanovi = await PovjerenstvaPoZaposleniku.getByPovjerenstvo(idPovjerenstva);
+    res.json(clanovi);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
+}
+
 };

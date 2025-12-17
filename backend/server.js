@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { pool } from "./db.js";
+
 import { AkademskeGodine } from "./models/akademskeGodine.js";
 import { authController } from "./controllers/authController.js";
 import { zaposlenikovController } from "./controllers/zaposlenikovController.js";
@@ -13,6 +14,9 @@ import { organizacijskeJediniceController } from "./controllers/organizacijskeJe
 
 // ZA POPIS POVJERENSTVA
 import { povjerenstvaController } from "./controllers/povjerenstvaController.js";
+
+//ZA POVJERENSTVA PO ZAPOSLENIKU
+import { povjerenstvaPoZaposlenikovController } from "./controllers/povjerenstvaPoZaposlenikovController.js";
 
 const app = express();
 app.use(cors());
@@ -54,7 +58,15 @@ app.post("/api/akademske-godine", akademskeGodineController.create);
 app.get("/api/organizacijske-jedinice/:idAkGodina", organizacijskeJediniceController.getAllByAkGodina);
 
 //ZA POPIS POVJERENSTVA
-app.get("/api/povjerenstva/:idOrgJed", povjerenstvaController.getAllByOrgJed);
+app.get('/api/povjerenstva/:idOrgJed', povjerenstvaController.getAllByOrgJed);
+
+
+//ZA DETALJE POVJERENSTVA
+app.get('/api/povjerenstva-po-zaposleniku/povjerenstvo/:idPovjerenstva', povjerenstvaPoZaposlenikovController.getByPovjerenstvo);
+app.get('/api/povjerenstva/detalji/:idPovjerenstva',povjerenstvaController.getDetalji);
+
+// povjerenstva jednog zaposlenika
+app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);
 
 
 app.listen(3000, () =>

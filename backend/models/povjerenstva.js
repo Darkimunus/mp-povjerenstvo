@@ -12,5 +12,29 @@ export const Povjerenstva = {
     } finally {
       conn.release();
     }
+  }, 
+
+   //DETALJI ZA PRIKAZ NA EKRANU DETALJA POVJERENSTVA
+  getDetalji: async (idPovjerenstva) => {
+  const conn = await pool.getConnection();
+  try {
+    const rows = await conn.query(`
+      SELECT
+        p.naziv_povjerenstva,
+        p.opis_povjerenstva,
+        oj.naziv_org_jed,
+        ag.godina
+      FROM db_povjerenstva p
+      JOIN db_organizacijske_jedinice oj ON oj.ID_org_jed = p.ID_org_jed
+      JOIN db_akademske_godine ag ON ag.ID_ak_godina = oj.ID_ak_godina
+      WHERE p.ID_povjerenstva = ?
+    `, [idPovjerenstva]);
+
+    return rows[0];
+  } finally {
+    conn.release();
   }
+}
+
+
 };

@@ -26,7 +26,7 @@
         :key="povjerenstvo.ID_povjerenstva"
         class="col-12 col-sm-6 col-md-4"
       >
-        <q-card class="year-card q-pa-sm" outlined>
+        <q-card class="year-card q-pa-sm" outlined @click="openPovjerenstvo(povjerenstvo.ID_povjerenstva)">
           <q-img
             src="https://www.veleri.hr/veleri-logo-horizontal.png"
             class="year-img"
@@ -114,6 +114,11 @@ const goBack = async () => {
   const idAkGodina = String(route.params.idAkGodina);
   await router.push(`/akademska-godina/${idAkGodina}`);
 };
+
+const openPovjerenstvo = async (idPovjerenstva: number) => {
+  await router.push(`/povjerenstvo/${idPovjerenstva}`);
+};
+
 
 </script>
 

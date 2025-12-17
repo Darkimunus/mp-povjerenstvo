@@ -13,6 +13,16 @@ const routes: RouteRecordRaw[] = [
     path: '/change-password',
     component: () => import('pages/PromjenaLozinkePage.vue'),
   },
+/////////
+  {
+  path: '/akademska-godina/:id',
+  component: () => import('layouts/MainLayout.vue'),
+  children: [
+    { path: '', component: () => import('pages/OrganizacijskeJedinicePage.vue') }
+  ]
+},
+
+///////////
   {
     path: '/home',
     component: () => import('layouts/MainLayout.vue'),
@@ -24,8 +34,8 @@ const routes: RouteRecordRaw[] = [
     children: [{ path: '', component: () => import('pages/ProfilPage.vue') }],
   },
 
-  // Always leave this as last one,
-  // but you can also remove it
+  // OVU PUŠTAMO ZADNJU
+
   {
     path: '/:catchAll(.*)*',
     component: () => import('pages/ErrorNotFound.vue'),

@@ -186,7 +186,8 @@ const createGodina = async () => {
 
 // KLIK NA GODINU --NEDOVRŠENO JER NE POSTOJE PROZORI ZA DETALJE AK. GOD.
 const openGodina = async (id: number) => {
-  await router.push(`/akademska-godina/${id}`);
+ // await router.push(`/akademska-godina/${id}`);
+ await router.push(`/akademska-godina/${id}`);
 };
 
 </script>

@@ -1,6 +1,8 @@
 import { pool } from "../db.js";
 
-export const OrganizacijskeJedinice = {
+export const OrganizacijskeJedinice = { 
+
+  //dohvat svih org.jedinica po akademskoj godini
   getAllByAkGodina: async (idAkGodina) => {
     const conn = await pool.getConnection();
     try {

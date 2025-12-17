@@ -8,6 +8,8 @@ import { verifyToken } from "./middleware/verifyToken.js";
 
 import {akademskeGodineController} from "./controllers/akademskeGodineController.js";
 
+//import za org. jedinice
+import { organizacijskeJediniceController } from "./controllers/organizacijskeJediniceController.js";
 
 const app = express();
 app.use(cors());
@@ -44,6 +46,9 @@ app.put("/api/zaposlenici/:id", verifyToken, zaposlenikovController.updateById);
 app.get("/api/akademske-godine", akademskeGodineController.getAll);
 app.get("/api/akademske-godine/:id", akademskeGodineController.getById);
 app.post("/api/akademske-godine", akademskeGodineController.create);
+
+//ZA ORG. JEDINICE
+app.get("/api/organizacijske-jedinice/:idAkGodina", organizacijskeJediniceController.getAllByAkGodina);
 
 app.listen(3000, () =>
   console.log("Backend server running on http://localhost:3000")

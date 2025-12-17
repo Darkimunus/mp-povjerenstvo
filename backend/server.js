@@ -11,6 +11,9 @@ import {akademskeGodineController} from "./controllers/akademskeGodineController
 //import za org. jedinice
 import { organizacijskeJediniceController } from "./controllers/organizacijskeJediniceController.js";
 
+// ZA POPIS POVJERENSTVA
+import { povjerenstvaController } from "./controllers/povjerenstvaController.js";
+
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -49,6 +52,10 @@ app.post("/api/akademske-godine", akademskeGodineController.create);
 
 //ZA ORG. JEDINICE
 app.get("/api/organizacijske-jedinice/:idAkGodina", organizacijskeJediniceController.getAllByAkGodina);
+
+//ZA POPIS POVJERENSTVA
+app.get("/api/povjerenstva/:idOrgJed", povjerenstvaController.getAllByOrgJed);
+
 
 app.listen(3000, () =>
   console.log("Backend server running on http://localhost:3000")

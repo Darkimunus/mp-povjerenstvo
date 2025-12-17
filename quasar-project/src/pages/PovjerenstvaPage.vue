@@ -12,7 +12,7 @@
         aria-label="Natrag"
         class="back-btn"
       />
-      <div class="text-h4 title-text">Organizacijske jedinice</div>
+      <div class="text-h4 title-text">Povjerenstva</div>
     </div>
 
     <div v-if="loading" class="q-mt-lg text-center">
@@ -22,25 +22,25 @@
 
     <div v-else class="row q-col-gutter-md q-mb-md grid-container">
       <div
-        v-for="jedinica in paginatedJedinice"
-        :key="jedinica.ID_org_jed"
+        v-for="povjerenstvo in paginatedPovjerenstva"
+        :key="povjerenstvo.ID_povjerenstva"
         class="col-12 col-sm-6 col-md-4"
       >
-        <q-card class="year-card q-pa-sm" outlined @click="openOrgJedinica(jedinica.ID_org_jed)">
+        <q-card class="year-card q-pa-sm" outlined>
           <q-img
             src="https://www.veleri.hr/veleri-logo-horizontal.png"
             class="year-img"
           />
           <q-card-section class="text-center">
-            <div class="text-h6">{{ jedinica.naziv_org_jed }}</div>
+            <div class="text-h6">{{ povjerenstvo.naziv_povjerenstva }}</div>
+            <div class="text-caption q-mt-xs">{{ povjerenstvo.opis_povjerenstva }}</div>
           </q-card-section>
         </q-card>
       </div>
     </div>
 
-    <!-- Poruka ako nema jedinica -->
-    <div v-if="!loading && organizacijskeJedinice.length === 0" class="text-center q-mt-md">
-      Nema organizacijskih jedinica za odabranu akademsku godinu.
+    <div v-if="!loading && povjerenstva.length === 0" class="text-center q-mt-md">
+      Nema povjerenstava za odabranu organizacijsku jedinicu.
     </div>
 
     <!-- PAGINACIJA -->
@@ -69,79 +69,71 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
-interface OrgJedinica {
+interface Povjerenstvo {
+  ID_povjerenstva: number;
+  naziv_povjerenstva: string;
+  opis_povjerenstva: string;
   ID_org_jed: number;
-  naziv_org_jed: string;
-  ID_ak_godina: number;
 }
 
 const route = useRoute();
 const router = useRouter();
-const organizacijskeJedinice = ref<OrgJedinica[]>([]);
+const povjerenstva = ref<Povjerenstvo[]>([]);
 const loading = ref(true);
 
 // Paginacija
 const currentPage = ref(1);
 const itemsPerPage = 6;
-const paginatedJedinice = computed(() => {
+const paginatedPovjerenstva = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage;
-  return organizacijskeJedinice.value.slice(start, start + itemsPerPage);
+  return povjerenstva.value.slice(start, start + itemsPerPage);
 });
-const totalPages = computed(() => Math.ceil(organizacijskeJedinice.value.length / itemsPerPage));
+const totalPages = computed(() => Math.ceil(povjerenstva.value.length / itemsPerPage));
 
-const loadOrgJedinice = async () => {
+const loadPovjerenstva = async () => {
   try {
-    const idAkGodina = String(route.params.id);
-    if (!idAkGodina) {
+    const idOrgJed = String(route.params.idOrgJed);
+    if (!idOrgJed) {
       loading.value = false;
       return;
     }
-    const res = await axios.get(`http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`);
-    organizacijskeJedinice.value = res.data;
+    const res = await axios.get(`http://localhost:3000/api/povjerenstva/${idOrgJed}`);
+    povjerenstva.value = res.data;
   } catch {
-    alert("Greška pri učitavanju organizacijskih jedinica.");
+    alert("Greška pri učitavanju povjerenstava.");
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(() => {
-  void loadOrgJedinice();
+  void loadPovjerenstva();
 });
 
-// Funkcija za povratak na popis akademskih godina
-const goBack = () => {
-  void router.push('/home'); // vodi na IndexPage.vue
+const goBack = async () => {
+  const idAkGodina = String(route.params.idAkGodina);
+  await router.push(`/akademska-godina/${idAkGodina}`);
 };
-
-//Otvaranje popisa povjerenstva
-const openOrgJedinica = async (jedinicaId: number) => {
-  const idAkGodina = String(route.params.id); 
-  await router.push(`/organizacijska-jedinica/${jedinicaId}/${idAkGodina}/povjerenstva`);
-};
-
 
 </script>
 
 <style scoped lang="scss">
-/* Header */
 .header-container {
-  margin-bottom: 32px; 
+  margin-bottom: 32px;
 }
 
 .back-btn {
-  margin-right: 20px; 
+  margin-right: 20px;
 }
 
 .title-text {
-  flex: 1; 
+  flex: 1;
 }
 
-/* Kartice */
 .year-card {
   cursor: pointer;
   transition: 0.2s;
-  height: 180px;          
+  height: 180px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -159,7 +151,10 @@ const openOrgJedinica = async (jedinicaId: number) => {
   object-fit: contain;
 }
 
-/* Paginacija */
+.text-caption {
+  color: #555;
+}
+
 .pagination-container {
   display: flex;
   gap: 8px;

@@ -12,8 +12,15 @@
         aria-label="Natrag"
         class="back-btn"
       />
-      <div class="text-h4 title-text">Organizacijske jedinice</div>
+
+      <div class="header-title-centered">
+        Akademska godina: {{ akademskaGodina }}
+      </div>
+
+      <div class="header-spacer"></div>
+      
     </div>
+
 
     <div v-if="loading" class="q-mt-lg text-center">
       <q-spinner color="primary" size="50px" />
@@ -69,6 +76,8 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
+const akademskaGodina = ref<string>("");
+
 interface OrgJedinica {
   ID_org_jed: number;
   naziv_org_jed: string;
@@ -90,23 +99,24 @@ const paginatedJedinice = computed(() => {
 const totalPages = computed(() => Math.ceil(organizacijskeJedinice.value.length / itemsPerPage));
 
 const loadOrgJedinice = async () => {
+  const idAkGodina = String(route.params.id);
   try {
-    const idAkGodina = String(route.params.id);
-    if (!idAkGodina) {
-      loading.value = false;
-      return;
-    }
-    const res = await axios.get(`http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`);
-    organizacijskeJedinice.value = res.data;
+    const [jediniceRes, godinaRes] = await Promise.all([
+      axios.get(`http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`),
+      axios.get(`http://localhost:3000/api/akademske-godine/${idAkGodina}`)
+    ]);
+
+    organizacijskeJedinice.value = jediniceRes.data;
+    akademskaGodina.value = godinaRes.data.godina;
   } catch {
-    alert("Greška pri učitavanju organizacijskih jedinica.");
+    alert("Greška pri učitavanju podataka.");
   } finally {
     loading.value = false;
   }
 };
 
 onMounted(() => {
-  void loadOrgJedinice();
+  void loadOrgJedinice(); 
 });
 
 // Funkcija za povratak na popis akademskih godina
@@ -124,17 +134,24 @@ const openOrgJedinica = async (jedinicaId: number) => {
 </script>
 
 <style scoped lang="scss">
+
 /* Header */
 .header-container {
-  margin-bottom: 32px; 
+  position: relative;
+  margin-top: 25px;
+  margin-bottom: 60px;
 }
 
-.back-btn {
-  margin-right: 20px; 
+.header-title-centered {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 25px;
+  font-weight: bold;
 }
 
-.title-text {
-  flex: 1; 
+.header-spacer {
+  width: 40px; 
 }
 
 /* Kartice */

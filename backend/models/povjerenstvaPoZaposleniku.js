@@ -16,25 +16,8 @@ export const PovjerenstvaPoZaposleniku = {
       conn.release();
     }
   },
-/*OVO DELA, ALI OVO NI ZA PRIKAZ TABLIČNO DA SE VIDE IMENA ZAPOSLENIKA ITD. 
-  getByPovjerenstvo: async (idPovjerenstva) => {
-    const conn = await pool.getConnection();
-    try {
-      const rows = await conn.query(
-        `SELECT ID_povjerenstva_po_zaposleniku, uloga_clana, pocetak_mandata, kraj_mandata, procjena_radnih_sati, ID_povjerenstva, ID_zaposlenika, zamijenjeni_clan 
-         FROM db_povjerenstva_po_zaposleniku 
-         WHERE ID_povjerenstva = ?`,
-        [idPovjerenstva]
-      );
-      return rows;
-    } finally {
-      conn.release();
-    }
-  }
-    */
 
-  //NOVO PROBA:
-
+  //za prikaz povjerenstva detalji
   getByPovjerenstvo: async (idPovjerenstva) => {
     const conn = await pool.getConnection();
     try {

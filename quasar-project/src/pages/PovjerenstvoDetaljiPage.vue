@@ -22,14 +22,14 @@
 
     <!-- OPIS -->
     <q-card class="q-mb-lg">
-      <q-card-section>
-        <div class="text-subtitle1 text-weight-bold">
-          Opis povjerenstva
+    <q-card-section>
+        <div class="q-mt-sm opis-povjerenstva text-weight-bold">
+        Opis povjerenstva
         </div>
-        <div class="q-mt-sm">
-          {{ opisPovjerenstva }}
+        <div class="q-mt-sm opis-povjerenstva">
+        {{ opisPovjerenstva }}
         </div>
-      </q-card-section>
+    </q-card-section>
     </q-card>
 
     <!-- TABLICA -->
@@ -150,7 +150,7 @@ const goBack = () => router.back();
 
 .header-title {
   font-weight: bold;
-  font-size: 18px;
+  font-size: 22px;
   margin-top: 20px;
 }
 
@@ -159,11 +159,23 @@ const goBack = () => router.back();
   margin-top: 22px;
 }
 
+.opis-povjerenstva {
+  font-size: 18px;  
+  line-height: 1.5;
+}
+
 /* NASLOVI STUPACA */
 :deep(.q-table thead th) {
   font-weight: bold;
+  font-size: 17px;
   background-color: #f5f5f5;
   text-align: center;
+}
+
+/* Vrijednosti u tablici */
+:deep(.q-table td) {
+  font-size: 16px; 
+  text-align: left; 
 }
 
 </style>

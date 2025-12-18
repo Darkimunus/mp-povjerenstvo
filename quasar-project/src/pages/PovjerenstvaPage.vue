@@ -12,7 +12,14 @@
         aria-label="Natrag"
         class="back-btn"
       />
-      <div class="text-h4 title-text">Povjerenstva</div>
+
+      <div class="header-titles">
+        <div class="header-ak-godina">Akademska godina: {{ akademskaGodina }}</div>
+        <div class="header-org-jed">{{ nazivOrgJed }}</div>
+      </div>
+
+      <div class="header-spacer"></div>
+
     </div>
 
     <div v-if="loading" class="q-mt-lg text-center">
@@ -69,12 +76,22 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
+const akademskaGodina = ref<string>("");
+const nazivOrgJed = ref<string>("");
+
 interface Povjerenstvo {
   ID_povjerenstva: number;
   naziv_povjerenstva: string;
   opis_povjerenstva: string;
   ID_org_jed: number;
 }
+
+interface OrgJedinica {
+  ID_org_jed: number;
+  naziv_org_jed: string;
+  ID_ak_godina: number;
+}
+
 
 const route = useRoute();
 const router = useRouter();
@@ -90,24 +107,29 @@ const paginatedPovjerenstva = computed(() => {
 });
 const totalPages = computed(() => Math.ceil(povjerenstva.value.length / itemsPerPage));
 
-const loadPovjerenstva = async () => {
+
+onMounted(async () => {
+  const idOrgJed = String(route.params.idOrgJed);
+  const idAkGodina = String(route.params.idAkGodina);
+
   try {
-    const idOrgJed = String(route.params.idOrgJed);
-    if (!idOrgJed) {
-      loading.value = false;
-      return;
-    }
-    const res = await axios.get(`http://localhost:3000/api/povjerenstva/${idOrgJed}`);
-    povjerenstva.value = res.data;
+    const [povjerenstvaRes, akGodRes, orgJedinicaRes] = await Promise.all([
+      axios.get(`http://localhost:3000/api/povjerenstva/${idOrgJed}`),
+      axios.get(`http://localhost:3000/api/akademske-godine/${idAkGodina}`),
+      axios.get(`http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`)
+    ]);
+
+    povjerenstva.value = povjerenstvaRes.data;
+    akademskaGodina.value = akGodRes.data.godina;
+
+    const org = (orgJedinicaRes.data as OrgJedinica[]).find(o => o.ID_org_jed === Number(idOrgJed));
+    nazivOrgJed.value = org?.naziv_org_jed ?? "";
   } catch {
-    alert("Greška pri učitavanju povjerenstava.");
+    alert("Greška pri učitavanju podataka.");
   } finally {
     loading.value = false;
   }
-};
 
-onMounted(() => {
-  void loadPovjerenstva();
 });
 
 const goBack = async () => {
@@ -123,16 +145,31 @@ const openPovjerenstvo = async (idPovjerenstva: number) => {
 </script>
 
 <style scoped lang="scss">
+
 .header-container {
-  margin-bottom: 32px;
+  position: relative;
+  margin-top: 25px;
+  margin-bottom: 60px;
 }
 
 .back-btn {
   margin-right: 20px;
 }
 
-.title-text {
+.header-titles {
   flex: 1;
+  text-align: center;
+}
+
+.header-ak-godina {
+  font-size: 25px;
+  font-weight: bold;
+}
+
+.header-org-jed {
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 20px;
 }
 
 .year-card {

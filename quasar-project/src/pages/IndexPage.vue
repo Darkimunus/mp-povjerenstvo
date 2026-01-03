@@ -3,14 +3,14 @@
     <div class="text-h4 q-mb-md">
       Dobrodošli, {{ userName }}!
     </div>
-  
+  <!--
     <q-card class="q-pa-md">
       <q-card-section>
         <p>Ovo je glavna stranica aplikacije.</p>
       </q-card-section>
     </q-card> 
+       -->
     
-   
    <!-- Gumb desno gore -->
     <div class="row justify-end q-mt-lg q-mb-md">
       <q-btn 

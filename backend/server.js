@@ -54,16 +54,19 @@ app.get("/api/akademske-godine", akademskeGodineController.getAll);
 app.get("/api/akademske-godine/:id", akademskeGodineController.getById);
 app.post("/api/akademske-godine", akademskeGodineController.create);
 
-//ZA ORG. JEDINICE
+// TRAŽILICA ORG. JEDINICE – MORA BITI PRIJE DONJE RUTE POPISA ORG. JEDINICA!
+app.get("/api/organizacijske-jedinice/search", organizacijskeJediniceController.searchByAkGodina);
+// ZA ORG. JEDINICE
 app.get("/api/organizacijske-jedinice/:idAkGodina", organizacijskeJediniceController.getAllByAkGodina);
 
+//ZA TRAŽILICU POVJERENSTVA - MORA BIT PRIJE DONJE RUTE ZA POPIS POVJERENSTVA!
+app.get("/api/povjerenstva/search", povjerenstvaController.searchByAkGodina);
 //ZA POPIS POVJERENSTVA
-app.get('/api/povjerenstva/:idOrgJed', povjerenstvaController.getAllByOrgJed);
-
+app.get("/api/povjerenstva/:idOrgJed", povjerenstvaController.getAllByOrgJed);
 
 //ZA DETALJE POVJERENSTVA
-app.get('/api/povjerenstva-po-zaposleniku/povjerenstvo/:idPovjerenstva', povjerenstvaPoZaposlenikovController.getByPovjerenstvo);
-app.get('/api/povjerenstva/detalji/:idPovjerenstva',povjerenstvaController.getDetalji);
+app.get("/api/povjerenstva-po-zaposleniku/povjerenstvo/:idPovjerenstva", povjerenstvaPoZaposlenikovController.getByPovjerenstvo);
+app.get("/api/povjerenstva/detalji/:idPovjerenstva",povjerenstvaController.getDetalji);
 
 // povjerenstva jednog zaposlenika
 app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);

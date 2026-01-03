@@ -18,9 +18,15 @@
       </div>
 
       <div class="header-spacer"></div>
-      
+
     </div>
 
+     <!-- TRAŽILICA + FILTERI KOMPONENTA-->
+      <SearchBarFilter
+        default-filter="org"
+        @search="onSearch"
+        @clear="loadOrgJedinice"
+      />
 
     <div v-if="loading" class="q-mt-lg text-center">
       <q-spinner color="primary" size="50px" />
@@ -75,6 +81,9 @@
 import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
+import {watch} from 'vue';
+
+import SearchBarFilter from 'src/components/SearchBarFilter.vue';
 
 const akademskaGodina = ref<string>("");
 
@@ -98,8 +107,10 @@ const paginatedJedinice = computed(() => {
 });
 const totalPages = computed(() => Math.ceil(organizacijskeJedinice.value.length / itemsPerPage));
 
+//Učitavanje org. jedinica
 const loadOrgJedinice = async () => {
   const idAkGodina = String(route.params.id);
+  loading.value= true;
   try {
     const [jediniceRes, godinaRes] = await Promise.all([
       axios.get(`http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`),
@@ -108,6 +119,7 @@ const loadOrgJedinice = async () => {
 
     organizacijskeJedinice.value = jediniceRes.data;
     akademskaGodina.value = godinaRes.data.godina;
+    currentPage.value = 1;
   } catch {
     alert("Greška pri učitavanju podataka.");
   } finally {
@@ -115,9 +127,56 @@ const loadOrgJedinice = async () => {
   }
 };
 
-onMounted(() => {
-  void loadOrgJedinice(); 
+//TRAŽILICA + FILTERI
+type FilterType = 'org' | 'pov';
+
+const onSearch = async ({ text, filter }: { text: string; filter: FilterType }) => {
+  const idAkGodina = String(route.params.id);
+
+  if (filter === 'org') {
+    // Filtriranje org.jedinica direktno
+    loading.value = true;
+    try {
+      const res = await axios.get(
+        'http://localhost:3000/api/organizacijske-jedinice/search',
+        { params: { search: text, idAkGodina } }
+      );
+      organizacijskeJedinice.value = res.data;
+      currentPage.value = 1;
+    } catch (err) {
+      console.error("Greška pri pretrazi:", err);
+      organizacijskeJedinice.value = [];
+    } finally {
+      loading.value = false;
+    }
+  }
+
+ if (filter === 'pov') {
+    await router.push({
+      path: `/organizacijska-jedinica/all/${idAkGodina}/povjerenstva`,
+      query: { search: text }
+    });
+  }
+
+};
+
+onMounted(async () => {
+  await loadOrgJedinice();
+
+  const search = String(route.query.search ?? '');
+  if (search) {
+    await onSearch({ text: search, filter: 'org' });
+  }
 });
+
+watch(
+  () => route.query.search,
+  (search) => {
+    if (search) {
+      void onSearch({ text: String(search), filter: 'org' });
+    }
+  }
+);
 
 // Funkcija za povratak na popis akademskih godina
 const goBack = () => {
@@ -129,7 +188,6 @@ const openOrgJedinica = async (jedinicaId: number) => {
   const idAkGodina = String(route.params.id); 
   await router.push(`/organizacijska-jedinica/${jedinicaId}/${idAkGodina}/povjerenstva`);
 };
-
 
 </script>
 

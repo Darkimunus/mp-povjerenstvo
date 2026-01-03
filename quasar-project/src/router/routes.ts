@@ -22,6 +22,16 @@ const routes: RouteRecordRaw[] = [
     { path: '', component: () => import('pages/OrganizacijskeJedinicePage.vue') }
   ]
 },
+//GLOBALNA PRETRAGA POVJERENSTVA EKRAN ORG.JEDINICEPAGE.VUE
+// JEDINA RUTA ZA POVJERENSTVA
+{
+  path: '/organizacijska-jedinica/:idOrgJed/:idAkGodina/povjerenstva',
+  component: () => import('layouts/MainLayout.vue'),
+  children: [
+    { path: '', component: () => import('pages/PovjerenstvaPage.vue') }
+  ]
+},
+
 //STRANICA POPISA POVJERENSTVA U ODABRENOJ ORG. JEDINICI
 {
   path: '/organizacijska-jedinica/:idOrgJed/:idAkGodina/povjerenstva',

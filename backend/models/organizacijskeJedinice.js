@@ -14,5 +14,23 @@ export const OrganizacijskeJedinice = {
     } finally {
       conn.release();
     }
-  }
+  }, 
+
+  //TRAŽILICA + FILTER
+searchByAkGodina: async (search, idAkGodina) =>{
+  const conn = await pool.getConnection();
+  try {
+      const rows = await conn.query(`
+        SELECT *
+        FROM db_organizacijske_jedinice
+        WHERE ID_ak_godina = ?
+          AND naziv_org_jed LIKE ?`, 
+        [idAkGodina, `%${search}%`]);
+
+      return rows;
+  }finally {
+      conn.release();
+    }
+}
+
 };

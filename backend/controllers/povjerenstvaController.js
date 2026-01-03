@@ -9,9 +9,28 @@ export const povjerenstvaController = {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
-  }, 
+  },
 
-  //DETALJI ZA PRIKAZ NA EKRANU DETALJA POVJERENSTVA
+  // TRAŽILICA + FILTERI
+  searchByAkGodina: async (req, res) => {
+    try {
+      const { search, idAkGodina } = req.query;
+       if (!idAkGodina) {
+        return res.status(400).json({ error: "Nedostaje akademska godina" });
+      } //if zagrada
+
+      const povjerenstva = await Povjerenstva.searchByAkGodina(
+        search ?? "",
+        Number(idAkGodina)
+      );
+
+      res.json(povjerenstva);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  },
+
+  // DETALJI POVJERENSTVA
   getDetalji: async (req, res) => {
     try {
       const id = Number(req.params.idPovjerenstva);
@@ -21,5 +40,5 @@ export const povjerenstvaController = {
       res.status(500).json({ error: err.message });
     }
   }
-  
 };
+

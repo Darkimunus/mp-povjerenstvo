@@ -14,6 +14,24 @@ export const Povjerenstva = {
     }
   }, 
 
+  //TRAŽILICA + FILTERI
+  searchByAkGodina: async (search, idAkGodina) => {
+  const conn = await pool.getConnection();
+  try {
+    const rows = await conn.query(`
+      SELECT p.*
+      FROM db_povjerenstva p
+      JOIN db_organizacijske_jedinice o ON p.ID_org_jed = o.ID_org_jed
+      WHERE o.ID_ak_godina = ?
+        AND p.naziv_povjerenstva LIKE ?`, 
+        [idAkGodina, `%${search}%`]);
+
+    return rows;
+  } finally {
+      conn.release();
+    }
+},
+
    //DETALJI ZA PRIKAZ NA EKRANU DETALJA POVJERENSTVA
   getDetalji: async (idPovjerenstva) => {
   const conn = await pool.getConnection();
@@ -35,6 +53,5 @@ export const Povjerenstva = {
     conn.release();
   }
 }
-
 
 };

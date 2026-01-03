@@ -22,6 +22,13 @@
 
     </div>
 
+     <!-- TRAŽILICA + FILTER KOMPONENTA-->
+       <SearchBarFilter
+        default-filter="pov"
+        @search="onSearch"
+        @clear="onClear"
+      />
+
     <div v-if="loading" class="q-mt-lg text-center">
       <q-spinner color="primary" size="50px" />
       <div>Učitavanje...</div>
@@ -47,7 +54,12 @@
     </div>
 
     <div v-if="!loading && povjerenstva.length === 0" class="text-center q-mt-md">
-      Nema povjerenstava za odabranu organizacijsku jedinicu.
+      <span v-if="route.params.idOrgJed === 'all'">
+        Nema povjerenstava za odabranu akademsku godinu.
+      </span>
+      <span v-else>
+        Nema povjerenstava za odabranu organizacijsku jedinicu.
+      </span>
     </div>
 
     <!-- PAGINACIJA -->
@@ -76,6 +88,10 @@ import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 
+//za tražilicu/filtre
+import SearchBarFilter from 'src/components/SearchBarFilter.vue';
+import {watch} from 'vue';
+
 const akademskaGodina = ref<string>("");
 const nazivOrgJed = ref<string>("");
 
@@ -92,7 +108,6 @@ interface OrgJedinica {
   ID_ak_godina: number;
 }
 
-
 const route = useRoute();
 const router = useRouter();
 const povjerenstva = ref<Povjerenstvo[]>([]);
@@ -108,30 +123,122 @@ const paginatedPovjerenstva = computed(() => {
 const totalPages = computed(() => Math.ceil(povjerenstva.value.length / itemsPerPage));
 
 
-onMounted(async () => {
-  const idOrgJed = String(route.params.idOrgJed);
+/* ------------------ FUNKCIJA ZA UČITAVANJE POVJERENSTAVA ------------------ */
+const loadPovjerenstva = async (search: string = '') => {
+  const idOrgJed = route.params.idOrgJed
+  ? String(route.params.idOrgJed)
+  : 'all';
+
   const idAkGodina = String(route.params.idAkGodina);
 
-  try {
-    const [povjerenstvaRes, akGodRes, orgJedinicaRes] = await Promise.all([
-      axios.get(`http://localhost:3000/api/povjerenstva/${idOrgJed}`),
-      axios.get(`http://localhost:3000/api/akademske-godine/${idAkGodina}`),
-      axios.get(`http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`)
-    ]);
+  loading.value = true;
 
-    povjerenstva.value = povjerenstvaRes.data;
+  try {
+    // AKADEMSKA GODINA 
+    const akGodRes = await axios.get(
+      `http://localhost:3000/api/akademske-godine/${idAkGodina}`
+    );
     akademskaGodina.value = akGodRes.data.godina;
 
-    const org = (orgJedinicaRes.data as OrgJedinica[]).find(o => o.ID_org_jed === Number(idOrgJed));
-    nazivOrgJed.value = org?.naziv_org_jed ?? "";
-  } catch {
-    alert("Greška pri učitavanju podataka.");
+    //GLOBALNA PRETRAGA POVJERENSTAVA (ALL)
+    if (idOrgJed === 'all') {
+      const res = await axios.get(
+        'http://localhost:3000/api/povjerenstva/search',
+        {
+          params: {
+            search,
+            idAkGodina
+          }
+        }
+      );
+
+      povjerenstva.value = res.data;
+      nazivOrgJed.value = 'Sva povjerenstva';
+      currentPage.value = 1;
+      return;
+    }
+
+    // POVJERENSTVA PO ORGANIZACIJSKOJ JEDINICI
+    const res = await axios.get(
+      `http://localhost:3000/api/povjerenstva/${idOrgJed}`
+    );
+
+    povjerenstva.value = search
+      ? res.data.filter((p: Povjerenstvo) =>
+          p.naziv_povjerenstva.toLowerCase().includes(search.toLowerCase())
+        )
+      : res.data;
+
+    currentPage.value = 1;
+
+    // naziv org. jedinice
+    const orgRes = await axios.get(
+      `http://localhost:3000/api/organizacijske-jedinice/${idAkGodina}`
+    );
+
+    const jedinica = orgRes.data.find(
+      (o: OrgJedinica) => o.ID_org_jed === Number(idOrgJed)
+    );
+
+    nazivOrgJed.value = jedinica?.naziv_org_jed ?? '';
+
+  } catch (err) {
+    console.error('LOAD POV ERROR:', err);
+    povjerenstva.value = [];
   } finally {
     loading.value = false;
   }
+};
 
+onMounted(() => {
+  const search = String(route.query.search ?? '');
+  void loadPovjerenstva(search);
 });
 
+//TRAŽILICA + FILTER
+type FilterType = 'org' | 'pov';
+
+const onSearch = async ({ text, filter }: { text: string; filter: FilterType }) => {
+  const idAkGodina = String(route.params.idAkGodina);
+
+  if (filter === 'pov') {
+    await router.push({
+      path: `/organizacijska-jedinica/all/${idAkGodina}/povjerenstva`,
+      query: { search: text }
+    });
+  }
+
+  if (filter === 'org') {
+    await router.push({
+      path: `/akademska-godina/${idAkGodina}`,
+      query: { search: text }
+    });
+  }
+};
+
+//tražilica i dalje - da bi se pretraga izvršila kada dođemo s filtra sa ekrana orgjedpage.vue ili filtera sa ekrana povjerenstvopage
+//watch za automatsku pretragu
+watch(
+  () => route.query.search,
+  (search) => {
+    void loadPovjerenstva(String(search ?? ''));
+  }
+);
+
+//da bi klik na "x" u tražilici vratio korisnik na ekran s kojeg je došao
+const onClear = async (filter: FilterType) => {
+  const idAkGodina = String(route.params.idAkGodina);
+
+  if (filter === 'org') {
+    // Ako je prethodno traženo po organizacijskim jedinicama
+    await router.push(`/akademska-godina/${idAkGodina}`);
+  } else if (filter === 'pov') {
+    // Ako je prethodno traženo povjerenstvo
+    await router.push(`/organizacijska-jedinica/all/${idAkGodina}/povjerenstva`);
+  }
+};
+
+//funkcija za vraćanje natrag
 const goBack = async () => {
   const idAkGodina = String(route.params.idAkGodina);
   await router.push(`/akademska-godina/${idAkGodina}`);
@@ -140,7 +247,6 @@ const goBack = async () => {
 const openPovjerenstvo = async (idPovjerenstva: number) => {
   await router.push(`/povjerenstvo/${idPovjerenstva}`);
 };
-
 
 </script>
 

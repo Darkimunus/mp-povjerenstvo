@@ -65,6 +65,12 @@ const linksList: EssentialLinkProps[] = [
     caption: 'Uredi profil.',
     icon: 'account_circle',
     link: '/profil'
+  },
+  {
+    title: 'Zaposlenici',
+    caption: 'Pregled zaposlenika.',
+    icon: 'people',
+    link: '/zaposlenici'
   }
 ];
 

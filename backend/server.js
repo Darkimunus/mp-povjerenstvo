@@ -48,6 +48,14 @@ app.get("/api/profile", verifyToken, async (req, res) => {
 // Zaposlenici routes
 app.get("/api/zaposlenici/:id", verifyToken, zaposlenikovController.getById);
 app.put("/api/zaposlenici/:id", verifyToken, zaposlenikovController.updateById);
+// Get all users
+app.get("/api/zaposlenici", verifyToken, zaposlenikovController.getAll);
+// Create user
+app.post("/api/zaposlenici", verifyToken, zaposlenikovController.create);
+// Delete user
+app.delete("/api/zaposlenici/:id", verifyToken, zaposlenikovController.deleteById);
+// Reset password
+app.post("/api/zaposlenici/:id/reset-password", verifyToken, zaposlenikovController.resetPassword);
 
 //ZA AKADEMSKU GODINU
 app.get("/api/akademske-godine", akademskeGodineController.getAll);

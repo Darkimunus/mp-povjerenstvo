@@ -74,5 +74,78 @@ export const zaposlenikovController = {
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
+  },
+  create: async (req, res) => {
+    try {
+      const { ime_zaposlenika, prezime_zaposlenika, email } = req.body
+
+      if (!ime_zaposlenika || !prezime_zaposlenika || !email) {
+        return res.status(400).json({ error: 'Sva polja su obavezna' })
+      }
+
+      const existing = await Zaposlenici.getByEmail(email)
+      if (existing) {
+        return res.status(409).json({ error: 'Email je već u upotrebi' })
+      }
+
+      const hashed = await bcrypt.hash('povjerenstvo123', 10)
+
+      const newUser = await Zaposlenici.create({
+        ime_zaposlenika,
+        prezime_zaposlenika,
+        email,
+        lozinka: hashed
+      })
+
+      res.status(201).json(newUser)
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'Greška na serveru' })
+    }
+  },
+  deleteById: async (req, res) => {
+    try {
+      const { id } = req.params
+
+      const existing = await Zaposlenici.getById(id)
+      if (!existing) {
+        return res.status(404).json({ error: 'Zaposlenik nije pronađen' })
+      }
+
+      const hasRelations = await Zaposlenici.hasPovjerenstva(id)
+      if (hasRelations) {
+        return res.status(409).json({
+          error: 'Zaposlenik je povezan s povjerenstvima i ne može se obrisati'
+        })
+      }
+
+      await Zaposlenici.deleteById(id)
+      res.json({ message: 'Zaposlenik obrisan' })
+
+    } catch (error) {
+      console.error(error)
+      res.status(500).json({ error: 'Greška na serveru' })
+    }
+  },
+
+  resetPassword: async (req, res) => {
+    try {
+      const { id } = req.params
+      const existing = await Zaposlenici.getById(id)
+
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Zaposlenik nije pronađen' })
+      }
+
+
+      const hashed = await bcrypt.hash('povjerenstvo123', 10)
+      await Zaposlenici.resetPasswordById(id, hashed)
+
+
+      res.json({ message: 'Lozinka zadana na : povjerenstvo123 .' })
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
   }
 };

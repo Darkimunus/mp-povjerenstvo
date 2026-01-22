@@ -22,6 +22,45 @@
 
     </div>
 
+     <!-- GUMB ZA KREIRANJE POVJERENSTVA -->
+    <div class="row justify-end q-mt-lg q-mb-md" v-if="String(route.params.idOrgJed) !== 'all'">
+      <q-btn
+        color="primary"
+        label="Kreiraj novo povjerenstvo"
+        @click="showCreateDialog = true"
+      />
+    </div>
+
+    <!-- DIALOG ZA KREIRANJE POVJERENSTVA -->
+    <q-dialog v-model="showCreateDialog">
+      <q-card class="q-pa-md" style="width: 460px; max-width: 95vw;">
+        <q-card-section>
+          <div class="text-h6">Kreiraj novo povjerenstvo</div>
+        </q-card-section>
+
+        <q-card-section class="q-gutter-md">
+          <q-input
+            v-model="newNazivPov"
+            label="Naziv povjerenstva"
+            filled
+          />
+
+          <q-input
+            v-model="newOpisPov"
+            label="Opis povjerenstva"
+            type="textarea"
+            autogrow
+            filled
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Odustani" @click="closeCreateDialog" />
+          <q-btn color="primary" label="Spremi" @click="createPovjerenstvo" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
      <!-- TRAŽILICA + FILTER KOMPONENTA-->
        <SearchBarFilter
         default-filter="pov"
@@ -112,6 +151,11 @@ const route = useRoute();
 const router = useRouter();
 const povjerenstva = ref<Povjerenstvo[]>([]);
 const loading = ref(true);
+
+// Dialog state
+const showCreateDialog = ref(false);
+const newNazivPov = ref("");
+const newOpisPov = ref("");
 
 // Paginacija
 const currentPage = ref(1);
@@ -247,7 +291,49 @@ const goBack = async () => {
 const openPovjerenstvo = async (idPovjerenstva: number) => {
   await router.push(`/povjerenstvo/${idPovjerenstva}`);
 };
+/* --Kreiranje Povjerenstva */
+const closeCreateDialog = () => {
+  showCreateDialog.value = false;
+  newNazivPov.value = "";
+  newOpisPov.value = "";
+};
 
+const createPovjerenstvo = async () => {
+  const idOrgJed = Number(route.params.idOrgJed);
+
+  if (!newNazivPov.value.trim()) {
+    window.alert("Unesite naziv povjerenstva!");
+    return;
+  }
+  if (!newOpisPov.value.trim()) {
+    window.alert("Unesite opis povjerenstva!");
+    return;
+  }
+
+  try {
+    const res = await axios.post("http://localhost:3000/api/povjerenstva", {
+      naziv_povjerenstva: newNazivPov.value.trim(),
+      opis_povjerenstva: newOpisPov.value.trim(),
+      ID_org_jed: idOrgJed
+    });
+
+    window.alert(res.data?.message || "Povjerenstvo je uspješno kreirano!");
+
+    closeCreateDialog();
+
+    // nakon kreiranja, osvježi listu
+    const search = String(route.query.search ?? '');
+    await loadPovjerenstva(search);
+  } catch (err: unknown) {
+    console.error("CREATE POV ERROR:", err);
+
+    let msg = "Greška pri kreiranju povjerenstva.";
+    if (axios.isAxiosError(err) && err.response) {
+      msg = err.response.data?.error || msg;
+    }
+    window.alert(msg);
+  }
+};
 </script>
 
 <style scoped lang="scss">

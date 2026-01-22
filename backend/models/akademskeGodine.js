@@ -4,7 +4,13 @@ export const AkademskeGodine = {
   getAll: async () => {
     const conn = await pool.getConnection();
     try {
-      const rows = await conn.query("SELECT ID_ak_godina, godina FROM db_akademske_godine");
+      const rows = await conn.query(
+        `
+        SELECT ID_ak_godina, godina, aktivna_ak_godina
+        FROM db_akademske_godine
+        ORDER BY aktivna_ak_godina DESC, ID_ak_godina DESC
+        `
+      );
       return rows;
     } finally {
       conn.release();
@@ -14,30 +20,45 @@ export const AkademskeGodine = {
   getById: async (id) => {
     const conn = await pool.getConnection();
     try {
-      const rows = await conn.query("SELECT ID_ak_godina, godina FROM db_akademske_godine WHERE ID_ak_godina = ?", [id]);
+      const rows = await conn.query(
+        `
+        SELECT ID_ak_godina, godina, aktivna_ak_godina
+        FROM db_akademske_godine
+        WHERE ID_ak_godina = ?
+        `,
+        [id]
+      );
       return rows[0] || null;
     } finally {
       conn.release();
     }
   },
 
-  //KREIRANJE NOVE AKADEMSKE GODINE
-
-  create: async (godina) => {
+  /**
+   * Kreira novu akademsku godinu i postavlja je kao aktivnu (1),
+   * a sve ostale postavlja na neaktivne (0).
+   */
+  createAsActive: async (godina) => {
     const conn = await pool.getConnection();
-    try{
-      const result = await conn.query (
-        "INSERT INTO db_akademske_godine (godina) values (?)",
+    try {
+      await conn.beginTransaction();
+
+      await conn.query("UPDATE db_akademske_godine SET aktivna_ak_godina = 0");
+
+      const result = await conn.query(
+        "INSERT INTO db_akademske_godine (godina, aktivna_ak_godina) VALUES (?, 1)",
         [godina]
-      ); //const result zagrada
+      );
 
+      await conn.commit();
       return result.insertId.toString();
-    } //try zagrada
-
-    finally{
+    } catch (error) {
+      try {
+        await conn.rollback();
+      } catch (_) {}
+      throw error;
+    } finally {
       conn.release();
-    } //finally zagrada
-
-  } //create zagrada
-
+    }
+  },
 };

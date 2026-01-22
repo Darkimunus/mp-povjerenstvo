@@ -32,6 +32,78 @@
     </q-card-section>
     </q-card>
 
+    <!--  GUMB ZA DODAVANJE ČLANA -->
+    <div class="row justify-end q-mb-md">
+      <q-btn color="primary" label="Dodaj člana" @click="openCreateDialog" />
+    </div>
+
+    <!-- DIALOG ZA DODAVANJE ČLANA -->
+    <q-dialog v-model="showCreateDialog">
+      <q-card class="q-pa-md" style="width: 520px; max-width: 95vw;">
+        <q-card-section>
+          <div class="text-h6">Dodaj člana povjerenstva</div>
+        </q-card-section>
+
+        <q-card-section class="q-gutter-md">
+          <q-select
+            v-model="newClanIdZaposlenika"
+            :options="zaposleniciOptions"
+            option-value="value"
+            option-label="label"
+            emit-value
+            map-options
+            label="Zaposlenik"
+            filled
+          />
+
+          <q-select
+            v-model="newClanUloga"
+            :options="ulogeOptions"
+            label="Uloga"
+            filled
+          />
+
+          <q-input
+            v-model="newClanPocetak"
+            label="Početak mandata"
+            hint="npr. 01.01.2026 ili 2026-01-01"
+            filled
+          />
+
+          <q-input
+            v-model="newClanKraj"
+            label="Kraj mandata (opcionalno)"
+            filled
+          />
+
+          <q-input
+            v-model="newClanSati"
+            label="Procjena radnih sati"
+            type="number"
+            filled
+          />
+
+          <q-select
+            v-model="newClanZamijenjeni"
+            :options="zaposleniciOptions"
+            option-value="value"
+            option-label="label"
+            emit-value
+            map-options
+            label="Zamjenjuje (opcionalno)"
+            filled
+            clearable
+          />
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="Odustani" @click="closeCreateDialog" />
+          <q-btn color="primary" label="Spremi" @click="createClan" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+
     <!-- TABLICA -->
     <q-card>
       <q-table
@@ -49,6 +121,7 @@
     </q-card>
 
   </q-page>
+  
 
 </template>
 
@@ -79,6 +152,26 @@ interface ClanRow {
   zamjena_ime: string | null;
   zamjena_prezime: string | null;
 }
+
+type ZaposlenikDTO = {
+  ID_zaposlenika: number;
+  ime_zaposlenika: string;
+  prezime_zaposlenika: string;
+};
+
+// state za dialog + inputi
+const showCreateDialog = ref(false);
+
+const newClanIdZaposlenika = ref<number | null>(null);
+const newClanUloga = ref<string>("član");
+const newClanPocetak = ref<string>("");
+const newClanKraj = ref<string>("");
+const newClanSati = ref<string>("");
+const newClanZamijenjeni = ref<number | null>(null);
+
+const ulogeOptions = ["predsjednik", "član"];
+
+const zaposleniciOptions = ref<Array<{ label: string; value: number }>>([]);
 
 const columns = [
   {
@@ -115,6 +208,104 @@ const columns = [
     field: "procjena_radnih_sati"
   }
 ];
+
+// dohvat zaposlenika za dropdown (bez headers: undefined)
+const loadZaposleniciOptions = async () => {
+  try {
+    const token = localStorage.getItem("token");
+
+    const config = token
+      ? { headers: { Authorization: `Bearer ${token}` } }
+      : {};
+
+    const res = await axios.get<ZaposlenikDTO[]>(
+      "http://localhost:3000/api/zaposlenici",
+      config
+    );
+
+    zaposleniciOptions.value = (res.data ?? []).map((z: ZaposlenikDTO) => ({
+      value: Number(z.ID_zaposlenika),
+      label: `${z.prezime_zaposlenika} ${z.ime_zaposlenika}`,
+    }));
+  } catch (err) {
+    console.error("LOAD ZAPOSLENICI ERROR:", err);
+    zaposleniciOptions.value = [];
+  }
+};
+
+//  otvori/zatvori dialog
+const openCreateDialog = async () => {
+  if (zaposleniciOptions.value.length === 0) {
+    await loadZaposleniciOptions();
+  }
+  showCreateDialog.value = true;
+};
+
+const closeCreateDialog = () => {
+  showCreateDialog.value = false;
+  newClanIdZaposlenika.value = null;
+  newClanUloga.value = "član";
+  newClanPocetak.value = "";
+  newClanKraj.value = "";
+  newClanSati.value = "";
+  newClanZamijenjeni.value = null;
+};
+
+//  refresh članova (isti GET kao i gore)
+const refreshClanovi = async () => {
+  const id = String(route.params.idPovjerenstva);
+  const clanRes = await axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`);
+  clanovi.value = clanRes.data;
+};
+
+//  create član/mandat
+const createClan = async () => {
+  const idPovjerenstva = Number(route.params.idPovjerenstva);
+
+  if (!idPovjerenstva) {
+    window.alert("Ne mogu odrediti ID povjerenstva.");
+    return;
+  }
+
+  if (!newClanIdZaposlenika.value) {
+    window.alert("Odaberi zaposlenika.");
+    return;
+  }
+
+  if (!newClanPocetak.value.trim()) {
+    window.alert("Unesi početak mandata.");
+    return;
+  }
+
+  if (!newClanSati.value.toString().trim()) {
+    window.alert("Unesi procjenu radnih sati.");
+    return;
+  }
+
+  try {
+    const res = await axios.post("http://localhost:3000/api/povjerenstva-po-zaposleniku", {
+      ID_povjerenstva: idPovjerenstva,
+      ID_zaposlenika: newClanIdZaposlenika.value,
+      uloga_clana: newClanUloga.value,
+      pocetak_mandata: newClanPocetak.value.trim(),
+      kraj_mandata: newClanKraj.value.trim(),
+      procjena_radnih_sati: newClanSati.value.toString().trim(),
+      zamijenjeni_clan: newClanZamijenjeni.value,
+    });
+
+    window.alert(res.data?.message || "Član povjerenstva je uspješno dodan!");
+    closeCreateDialog();
+    await refreshClanovi();
+  } catch (err: unknown) {
+    console.error("CREATE CLAN ERROR:", err);
+
+    let msg = "Greška pri dodavanju člana.";
+    if (axios.isAxiosError(err) && err.response) {
+      msg = err.response.data?.error || msg;
+    }
+    window.alert(msg);
+  }
+};
 
 
 

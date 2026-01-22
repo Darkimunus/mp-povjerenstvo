@@ -49,6 +49,47 @@ export const PovjerenstvaPoZaposleniku = {
     } finally {
       conn.release();
     } //finally zagrada
-  } //getByPovjerenstvo zagrada
+  }, //getByPovjerenstvo zagrada
+
+// kreiranje člana/mandata u povjerenstvu
+  create: async ({
+    ID_povjerenstva,
+    ID_zaposlenika,
+    uloga_clana,
+    pocetak_mandata,
+    kraj_mandata,
+    procjena_radnih_sati,
+    zamijenjeni_clan,
+  }) => {
+    const conn = await pool.getConnection();
+    try {
+      // 1) ako ne mijenja nikoga: postavi zamijenjeni_clan na sebe (radi NOT NULL + FK)
+      const zamijenjeni = zamijenjeni_clan ? Number(zamijenjeni_clan) : Number(ID_zaposlenika);
+
+      const result = await conn.query(
+        `
+        INSERT INTO db_povjerenstva_po_zaposleniku
+          (uloga_clana, pocetak_mandata, kraj_mandata, procjena_radnih_sati, ID_povjerenstva, ID_zaposlenika, zamijenjeni_clan)
+        VALUES
+          (?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          String(uloga_clana),
+          String(pocetak_mandata),
+          // ako korisnik ne upiše kraj mandata, spremi prazno (jer u dumpu je NOT NULL)
+          // ako ste promijenili stupac da dopušta NULL, možeš ovo zamijeniti s null.
+          kraj_mandata ? String(kraj_mandata) : "",
+          String(procjena_radnih_sati),
+          Number(ID_povjerenstva),
+          Number(ID_zaposlenika),
+          zamijenjeni,
+        ]
+      );
+
+      return result.insertId.toString();
+    } finally {
+      conn.release();
+    }
+  },
 
 };

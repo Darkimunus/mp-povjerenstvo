@@ -52,6 +52,21 @@ export const Povjerenstva = {
   } finally {
     conn.release();
   }
-}
+},
+ create: async (naziv_povjerenstva, opis_povjerenstva, idOrgJed) => {
+    const conn = await pool.getConnection();
+    try {
+      const result = await conn.query(
+        `
+        INSERT INTO db_povjerenstva (naziv_povjerenstva, opis_povjerenstva, ID_org_jed)
+        VALUES (?, ?, ?)
+        `,
+        [naziv_povjerenstva, opis_povjerenstva, idOrgJed]
+      );
 
+      return result.insertId.toString();
+    } finally {
+      conn.release();
+    }
+  }
 };

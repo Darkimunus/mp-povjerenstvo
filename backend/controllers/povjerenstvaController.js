@@ -39,6 +39,38 @@ export const povjerenstvaController = {
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
-  }
+  },
+
+   // KREIRANJE POVJERENSTVA
+  create: async (req, res) => {
+    try {
+      const { naziv_povjerenstva, opis_povjerenstva, ID_org_jed } = req.body;
+
+      if (!ID_org_jed) {
+        return res.status(400).json({ error: "Nedostaje ID organizacijske jedinice." });
+      }
+
+      if (!naziv_povjerenstva || !String(naziv_povjerenstva).trim()) {
+        return res.status(400).json({ error: "Naziv povjerenstva je obavezan!" });
+      }
+
+      if (!opis_povjerenstva || !String(opis_povjerenstva).trim()) {
+        return res.status(400).json({ error: "Opis povjerenstva je obavezan!" });
+      }
+
+      const newId = await Povjerenstva.create(
+        String(naziv_povjerenstva).trim(),
+        String(opis_povjerenstva).trim(),
+        Number(ID_org_jed)
+      );
+
+      return res.status(201).json({
+        message: "Povjerenstvo je uspješno kreirano!",
+        id: newId.toString(),
+      });
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
 };
 

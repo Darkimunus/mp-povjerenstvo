@@ -1,8 +1,6 @@
 import { pool } from "../db.js";
 
-export const OrganizacijskeJedinice = { 
-
-  //dohvat svih org.jedinica po akademskoj godini
+export const OrganizacijskeJedinice = {
   getAllByAkGodina: async (idAkGodina) => {
     const conn = await pool.getConnection();
     try {
@@ -14,23 +12,36 @@ export const OrganizacijskeJedinice = {
     } finally {
       conn.release();
     }
-  }, 
+  },
 
-  //TRAŽILICA + FILTER
-searchByAkGodina: async (search, idAkGodina) =>{
-  const conn = await pool.getConnection();
-  try {
-      const rows = await conn.query(`
-        SELECT *
+  searchByAkGodina: async (search, idAkGodina) => {
+    const conn = await pool.getConnection();
+    try {
+      const rows = await conn.query(
+        `
+        SELECT ID_org_jed, naziv_org_jed, ID_ak_godina
         FROM db_organizacijske_jedinice
         WHERE ID_ak_godina = ?
-          AND naziv_org_jed LIKE ?`, 
-        [idAkGodina, `%${search}%`]);
-
+          AND naziv_org_jed LIKE ?
+        `,
+        [idAkGodina, `%${search}%`]
+      );
       return rows;
-  }finally {
+    } finally {
       conn.release();
     }
-}
+  },
 
+  create: async (naziv_org_jed, idAkGodina) => {
+    const conn = await pool.getConnection();
+    try {
+      const result = await conn.query(
+        "INSERT INTO db_organizacijske_jedinice (naziv_org_jed, ID_ak_godina) VALUES (?, ?)",
+        [naziv_org_jed, idAkGodina]
+      );
+      return result.insertId.toString();
+    } finally {
+      conn.release();
+    }
+  },
 };

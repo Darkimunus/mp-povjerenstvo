@@ -21,6 +21,38 @@
 
     </div>
 
+    <!-- GUMB ZA KREIRANJE ORG. JEDINICE -->
+<div class="row justify-end q-mt-lg q-mb-md">
+  <q-btn
+    color="primary"
+    label="Kreiraj novu org. jedinicu"
+    @click="showCreateDialog = true"
+  />
+</div>
+
+<!-- DIALOG ZA KREIRANJE NOVE ORG. JEDINICE -->
+<q-dialog v-model="showCreateDialog">
+  <q-card class="q-pa-md" style="width: 350px">
+    <q-card-section>
+      <div class="text-h6">Kreiraj novu organizacijsku jedinicu</div>
+    </q-card-section>
+
+    <q-card-section>
+      <q-input
+        v-model="newNazivOrgJed"
+        label="Naziv organizacijske jedinice"
+        filled
+      />
+    </q-card-section>
+
+    <q-card-actions align="right">
+      <q-btn flat label="Odustani" @click="showCreateDialog = false" />
+      <q-btn color="primary" label="Spremi" @click="createOrgJedinica" />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
+
+
      <!-- TRAŽILICA + FILTERI KOMPONENTA-->
       <SearchBarFilter
         default-filter="org"
@@ -97,6 +129,9 @@ const route = useRoute();
 const router = useRouter();
 const organizacijskeJedinice = ref<OrgJedinica[]>([]);
 const loading = ref(true);
+// Dialog za kreiranje org. jedinice
+const showCreateDialog = ref(false);
+const newNazivOrgJed = ref("");
 
 // Paginacija
 const currentPage = ref(1);
@@ -124,6 +159,36 @@ const loadOrgJedinice = async () => {
     alert("Greška pri učitavanju podataka.");
   } finally {
     loading.value = false;
+  }
+};
+const createOrgJedinica = async () => {
+  const idAkGodina = Number(route.params.id);
+
+  if (!newNazivOrgJed.value.trim()) {
+    window.alert("Unesite naziv organizacijske jedinice!");
+    return;
+  }
+
+  try {
+    const res = await axios.post("http://localhost:3000/api/organizacijske-jedinice", {
+      naziv_org_jed: newNazivOrgJed.value.trim(),
+      ID_ak_godina: idAkGodina,
+    });
+
+    window.alert(res.data.message || "Organizacijska jedinica je uspješno kreirana!");
+
+    showCreateDialog.value = false;
+    newNazivOrgJed.value = "";
+
+    await loadOrgJedinice(); // refresh liste
+  } catch (err: unknown) {
+    console.error(err);
+
+    let msg = "Greška pri kreiranju organizacijske jedinice.";
+    if (axios.isAxiosError(err) && err.response) {
+      msg = err.response.data?.error || msg;
+    }
+    window.alert(msg);
   }
 };
 

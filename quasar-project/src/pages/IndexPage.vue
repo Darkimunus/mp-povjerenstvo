@@ -96,6 +96,7 @@ const userName = ref('');
 interface Godina {
   ID_ak_godina: number;
   godina: string;
+  aktivna_ak_godina?: number; // 0 ili 1
 }
 
 const akademskeGodine = ref<Godina[]>([]);

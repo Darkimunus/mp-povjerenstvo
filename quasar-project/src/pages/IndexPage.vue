@@ -35,6 +35,9 @@
           />
           <q-card-section class="text-center">
             <div class="text-h6">{{ godina.godina }}</div>
+            <div v-if="Number(godina.aktivna_ak_godina) === 1" class="active-badge q-mt-sm">
+            AKTIVNA
+            </div>
           </q-card-section>
         </q-card>
       </div>
@@ -222,6 +225,15 @@ const openGodina = async (id: number) => {
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+}
+.active-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-weight: bold;
+  font-size: 13px;
+  border: 1px solid #2e7d32;
+  color: #2e7d32;
 }
 
 </style>

@@ -49,6 +49,13 @@ export const povjerenstvaController = {
       if (!ID_org_jed) {
         return res.status(400).json({ error: "Nedostaje ID organizacijske jedinice." });
       }
+       // provjera da je org. jedinica u aktivnoj akademskoj godini
+      const isActive = await Povjerenstva.isOrgJedInActiveYear(Number(ID_org_jed));
+      if (!isActive) {
+        return res.status(403).json({
+          error: "Dodavanje povjerenstva je moguće samo u aktivnoj akademskoj godini.",
+        });
+      }
 
       if (!naziv_povjerenstva || !String(naziv_povjerenstva).trim()) {
         return res.status(400).json({ error: "Naziv povjerenstva je obavezan!" });

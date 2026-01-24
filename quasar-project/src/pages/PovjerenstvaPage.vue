@@ -23,14 +23,18 @@
     </div>
 
      <!-- GUMB ZA KREIRANJE POVJERENSTVA -->
-    <div class="row justify-end q-mt-lg q-mb-md" v-if="String(route.params.idOrgJed) !== 'all'">
-      <q-btn
-        color="primary"
-        label="Kreiraj novo povjerenstvo"
-        @click="showCreateDialog = true"
-      />
-    </div>
+<div class="row justify-end q-mt-lg q-mb-md" v-if="String(route.params.idOrgJed) !== 'all'">
+  <q-btn
+    v-if="isAktivnaGodina"
+    color="primary"
+    label="Kreiraj novo povjerenstvo"
+    @click="showCreateDialog = true"
+  />
 
+  <div v-else class="text-center full-width" style="opacity: 0.8;">
+    Dodavanje povjerenstava moguće je samo u aktivnoj akademskoj godini.
+  </div>
+</div>
     <!-- DIALOG ZA KREIRANJE POVJERENSTVA -->
     <q-dialog v-model="showCreateDialog">
       <q-card class="q-pa-md" style="width: 460px; max-width: 95vw;">
@@ -133,6 +137,7 @@ import {watch} from 'vue';
 
 const akademskaGodina = ref<string>("");
 const nazivOrgJed = ref<string>("");
+const isAktivnaGodina = ref<boolean>(false);
 
 interface Povjerenstvo {
   ID_povjerenstva: number;
@@ -183,6 +188,7 @@ const loadPovjerenstva = async (search: string = '') => {
       `http://localhost:3000/api/akademske-godine/${idAkGodina}`
     );
     akademskaGodina.value = akGodRes.data.godina;
+    isAktivnaGodina.value = Number(akGodRes.data.aktivna_ak_godina) === 1;
 
     //GLOBALNA PRETRAGA POVJERENSTAVA (ALL)
     if (idOrgJed === 'all') {
@@ -300,6 +306,11 @@ const closeCreateDialog = () => {
 
 const createPovjerenstvo = async () => {
   const idOrgJed = Number(route.params.idOrgJed);
+    if (!isAktivnaGodina.value) {
+    window.alert("Dodavanje povjerenstava moguće je samo u aktivnoj akademskoj godini.");
+    return;
+  }
+
 
   if (!newNazivPov.value.trim()) {
     window.alert("Unesite naziv povjerenstva!");

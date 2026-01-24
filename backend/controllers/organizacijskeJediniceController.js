@@ -1,4 +1,5 @@
 import { OrganizacijskeJedinice } from "../models/organizacijskeJedinice.js";
+import { AkademskeGodine } from "../models/akademskeGodine.js";
 
 export const organizacijskeJediniceController = {
   getAllByAkGodina: async (req, res) => {
@@ -38,6 +39,14 @@ export const organizacijskeJediniceController = {
 
       if (!ID_ak_godina) {
         return res.status(400).json({ error: "Nedostaje ID akademske godine." });
+      }
+
+      // dozvoli kreiranje samo u aktivnoj akademskoj godini
+      const isActive = await AkademskeGodine.isActive(Number(ID_ak_godina));
+      if (!isActive) {
+        return res.status(403).json({
+          error: "Dodavanje organizacijskih jedinica je moguće samo u aktivnoj akademskoj godini.",
+        });
       }
 
       if (!naziv_org_jed || !String(naziv_org_jed).trim()) {

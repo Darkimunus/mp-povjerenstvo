@@ -21,15 +21,19 @@
 
     </div>
 
-    <!-- GUMB ZA KREIRANJE ORG. JEDINICE -->
+   <!-- GUMB ZA KREIRANJE ORG. JEDINICE -->
 <div class="row justify-end q-mt-lg q-mb-md">
   <q-btn
+    v-if="isAktivnaGodina"
     color="primary"
     label="Kreiraj novu org. jedinicu"
     @click="showCreateDialog = true"
   />
-</div>
 
+  <div v-else class="text-center full-width" style="opacity: 0.8;">
+    Dodavanje organizacijskih jedinica moguće je samo u aktivnoj akademskoj godini.
+  </div>
+</div>
 <!-- DIALOG ZA KREIRANJE NOVE ORG. JEDINICE -->
 <q-dialog v-model="showCreateDialog">
   <q-card class="q-pa-md" style="width: 350px">
@@ -118,6 +122,7 @@ import {watch} from 'vue';
 import SearchBarFilter from 'src/components/SearchBarFilter.vue';
 
 const akademskaGodina = ref<string>("");
+const isAktivnaGodina = ref<boolean>(false);
 
 interface OrgJedinica {
   ID_org_jed: number;
@@ -154,6 +159,7 @@ const loadOrgJedinice = async () => {
 
     organizacijskeJedinice.value = jediniceRes.data;
     akademskaGodina.value = godinaRes.data.godina;
+    isAktivnaGodina.value = Number(godinaRes.data.aktivna_ak_godina) === 1;
     currentPage.value = 1;
   } catch {
     alert("Greška pri učitavanju podataka.");
@@ -163,6 +169,10 @@ const loadOrgJedinice = async () => {
 };
 const createOrgJedinica = async () => {
   const idAkGodina = Number(route.params.id);
+  if (!isAktivnaGodina.value) {
+    window.alert("Dodavanje je moguće samo u aktivnoj akademskoj godini.");
+    return;
+  }
 
   if (!newNazivOrgJed.value.trim()) {
     window.alert("Unesite naziv organizacijske jedinice!");

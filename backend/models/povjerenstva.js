@@ -33,7 +33,7 @@ export const Povjerenstva = {
 },
 
    //DETALJI ZA PRIKAZ NA EKRANU DETALJA POVJERENSTVA
-  getDetalji: async (idPovjerenstva) => {
+   getDetalji: async (idPovjerenstva) => {
   const conn = await pool.getConnection();
   try {
     const rows = await conn.query(`
@@ -41,7 +41,8 @@ export const Povjerenstva = {
         p.naziv_povjerenstva,
         p.opis_povjerenstva,
         oj.naziv_org_jed,
-        ag.godina
+        ag.godina,
+        ag.aktivna_ak_godina
       FROM db_povjerenstva p
       JOIN db_organizacijske_jedinice oj ON oj.ID_org_jed = p.ID_org_jed
       JOIN db_akademske_godine ag ON ag.ID_ak_godina = oj.ID_ak_godina
@@ -68,5 +69,26 @@ export const Povjerenstva = {
     } finally {
       conn.release();
     }
+  },
+
+  //provjera je li akademska godina aktivna
+  isOrgJedInActiveYear: async (idOrgJed) => {
+  const conn = await pool.getConnection();
+  try {
+    const rows = await conn.query(
+      `
+      SELECT ag.aktivna_ak_godina
+      FROM db_organizacijske_jedinice oj
+      JOIN db_akademske_godine ag ON ag.ID_ak_godina = oj.ID_ak_godina
+      WHERE oj.ID_org_jed = ?
+      LIMIT 1
+      `,
+      [Number(idOrgJed)]
+    );
+    if (!rows?.[0]) return false;
+    return Number(rows[0].aktivna_ak_godina) === 1;
+  } finally {
+    conn.release();
   }
+},
 };

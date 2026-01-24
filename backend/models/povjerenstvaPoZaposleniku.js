@@ -91,5 +91,26 @@ export const PovjerenstvaPoZaposleniku = {
       conn.release();
     }
   },
+  isPovjerenstvoInActiveYear: async (idPovjerenstva) => {
+  const conn = await pool.getConnection();
+  try {
+    const rows = await conn.query(
+      `
+      SELECT ag.aktivna_ak_godina
+      FROM db_povjerenstva p
+      JOIN db_organizacijske_jedinice oj ON oj.ID_org_jed = p.ID_org_jed
+      JOIN db_akademske_godine ag ON ag.ID_ak_godina = oj.ID_ak_godina
+      WHERE p.ID_povjerenstva = ?
+      LIMIT 1
+      `,
+      [Number(idPovjerenstva)]
+    );
+    if (!rows?.[0]) return false;
+    return Number(rows[0].aktivna_ak_godina) === 1;
+  } finally {
+    conn.release();
+  }
+},
+
 
 };

@@ -33,9 +33,18 @@
     </q-card>
 
     <!--  GUMB ZA DODAVANJE ČLANA -->
-    <div class="row justify-end q-mb-md">
-      <q-btn color="primary" label="Dodaj člana" @click="openCreateDialog" />
-    </div>
+<div class="row justify-end q-mb-md">
+  <q-btn
+    v-if="isAktivnaGodina"
+    color="primary"
+    label="Dodaj člana"
+    @click="openCreateDialog"
+  />
+
+  <div v-else class="text-center full-width" style="opacity: 0.8;">
+    Dodavanje članova moguće je samo u akademskoj godini.
+  </div>
+</div>
 
     <!-- DIALOG ZA DODAVANJE ČLANA -->
     <q-dialog v-model="showCreateDialog">
@@ -63,18 +72,47 @@
             filled
           />
 
-          <q-input
-            v-model="newClanPocetak"
-            label="Početak mandata"
-            hint="npr. 01.01.2026 ili 2026-01-01"
-            filled
-          />
+          <!-- POČETAK MANDATA -->
+<q-input
+  v-model="newClanPocetak"
+  label="Početak mandata"
+  filled
+  readonly
+>
+  <template #append>
+    <q-icon name="event" class="cursor-pointer">
+      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+        <q-date v-model="newClanPocetak" mask="DD.MM.YYYY.">
+          <div class="row items-center justify-end q-gutter-sm q-pa-sm">
+            <q-btn flat label="Zatvori" v-close-popup />
+          </div>
+        </q-date>
+      </q-popup-proxy>
+    </q-icon>
+  </template>
+</q-input>
 
-          <q-input
-            v-model="newClanKraj"
-            label="Kraj mandata (opcionalno)"
-            filled
-          />
+<!-- KRAJ MANDATA (OPCIONALNO) -->
+<q-input
+  v-model="newClanKraj"
+  label="Kraj mandata (opcionalno)"
+  filled
+  readonly
+  clearable
+>
+  <template #append>
+    <q-icon name="event" class="cursor-pointer">
+      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+        <q-date v-model="newClanKraj" mask="DD.MM.YYYY.">
+          <div class="row items-center justify-end q-gutter-sm q-pa-sm">
+            <q-btn flat label="Očisti" @click="newClanKraj = ''" v-close-popup />
+            <q-btn flat label="Zatvori" v-close-popup />
+          </div>
+        </q-date>
+      </q-popup-proxy>
+    </q-icon>
+  </template>
+</q-input>
 
           <q-input
             v-model="newClanSati"
@@ -140,6 +178,7 @@ const akademskaGodina = ref<string>("");
 const nazivOrgJed = ref<string>("");
 const nazivPovjerenstva = ref<string>("");
 const opisPovjerenstva = ref<string>("");
+const isAktivnaGodina = ref<boolean>(false);
 
 interface ClanRow {
   ID_povjerenstva_po_zaposleniku: number;
@@ -163,13 +202,13 @@ type ZaposlenikDTO = {
 const showCreateDialog = ref(false);
 
 const newClanIdZaposlenika = ref<number | null>(null);
-const newClanUloga = ref<string>("član");
+const newClanUloga = ref<string | null>(null);
 const newClanPocetak = ref<string>("");
 const newClanKraj = ref<string>("");
 const newClanSati = ref<string>("");
 const newClanZamijenjeni = ref<number | null>(null);
 
-const ulogeOptions = ["predsjednik", "član"];
+const ulogeOptions = ["Predsjednik", "Član", "Zamjenik predsjednika"];
 
 const zaposleniciOptions = ref<Array<{ label: string; value: number }>>([]);
 
@@ -235,6 +274,10 @@ const loadZaposleniciOptions = async () => {
 
 //  otvori/zatvori dialog
 const openCreateDialog = async () => {
+    if (!isAktivnaGodina.value) {
+    window.alert("Dodavanje članova moguće je samo u aktivnoj akademskoj godini.");
+    return;
+  }
   if (zaposleniciOptions.value.length === 0) {
     await loadZaposleniciOptions();
   }
@@ -244,7 +287,7 @@ const openCreateDialog = async () => {
 const closeCreateDialog = () => {
   showCreateDialog.value = false;
   newClanIdZaposlenika.value = null;
-  newClanUloga.value = "član";
+  newClanUloga.value = null;
   newClanPocetak.value = "";
   newClanKraj.value = "";
   newClanSati.value = "";
@@ -261,6 +304,14 @@ const refreshClanovi = async () => {
 //  create član/mandat
 const createClan = async () => {
   const idPovjerenstva = Number(route.params.idPovjerenstva);
+    if (!isAktivnaGodina.value) {
+    window.alert("Dodavanje članova moguće je samo u aktivnoj akademskoj godini.");
+    return;
+  }
+  if (newClanKraj.value.trim() && newClanKraj.value < newClanPocetak.value) {
+  window.alert("Kraj mandata ne može biti prije početka mandata.");
+  return;
+}
 
   if (!idPovjerenstva) {
     window.alert("Ne mogu odrediti ID povjerenstva.");
@@ -320,6 +371,7 @@ onMounted(async () => {
   clanovi.value = clanRes.data;
 
   akademskaGodina.value = detaljiRes.data.godina;
+  isAktivnaGodina.value = Number(detaljiRes.data.aktivna_ak_godina) === 1;
   nazivOrgJed.value = detaljiRes.data.naziv_org_jed;
   nazivPovjerenstva.value = detaljiRes.data.naziv_povjerenstva;
   opisPovjerenstva.value = detaljiRes.data.opis_povjerenstva;

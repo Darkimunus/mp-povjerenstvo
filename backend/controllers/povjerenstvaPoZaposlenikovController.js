@@ -39,6 +39,15 @@ export const povjerenstvaPoZaposlenikovController = {
       if (!ID_zaposlenika) {
         return res.status(400).json({ error: "Nedostaje ID_zaposlenika." });
       }
+      // dozvoli dodavanje članova samo u aktivnoj akademskoj godini
+      const isActive = await PovjerenstvaPoZaposleniku.isPovjerenstvoInActiveYear(
+        Number(ID_povjerenstva)
+      );
+      if (!isActive) {
+        return res.status(403).json({
+          error: "Dodavanje članova je moguće samo u aktivnoj akademskoj godini.",
+        });
+      }
       if (!uloga_clana || !String(uloga_clana).trim()) {
         return res.status(400).json({ error: "Uloga člana je obavezna." });
       }

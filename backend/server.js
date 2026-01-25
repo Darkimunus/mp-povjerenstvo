@@ -51,12 +51,18 @@ app.get("/api/zaposlenici/:id", verifyToken, zaposlenikovController.getById);
 app.put("/api/zaposlenici/:id", verifyToken, zaposlenikovController.updateById);
 // Get all users
 app.get("/api/zaposlenici", verifyToken, zaposlenikovController.getAll);
+// Get deleted users
+app.get("/api/zaposlenici-deleted", verifyToken, zaposlenikovController.getDeleted);
 // Create user
 app.post("/api/zaposlenici", verifyToken, zaposlenikovController.create);
 // Delete user
 app.delete("/api/zaposlenici/:id", verifyToken, zaposlenikovController.deleteById);
 // Reset password
 app.post("/api/zaposlenici/:id/reset-password", verifyToken, zaposlenikovController.resetPassword);
+// Toggle app user status
+app.post("/api/zaposlenici/:id/toggle-app-user", verifyToken, zaposlenikovController.toggleAppUser);
+// Restore user
+app.post("/api/zaposlenici/:id/restore", verifyToken, zaposlenikovController.restoreUser);
 
 //ZA AKADEMSKU GODINU
 app.get("/api/akademske-godine", akademskeGodineController.getAll);
@@ -91,6 +97,10 @@ app.get("/api/povjerenstva-po-zaposleniku/povjerenstvo/:idPovjerenstva", povjere
 app.get("/api/povjerenstva/detalji/:idPovjerenstva",povjerenstvaController.getDetalji);
 
 app.post("/api/povjerenstva-po-zaposleniku", povjerenstvaPoZaposlenikovController.create);
+
+// povjerenstva jednog zaposlenika
+app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);
+
 
 app.get(
   "/api/izvjestaji/sudjelovanje-zaposlenika",

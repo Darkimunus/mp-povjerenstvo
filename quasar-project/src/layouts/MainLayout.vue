@@ -71,6 +71,12 @@ const linksList: EssentialLinkProps[] = [
     caption: 'Pregled zaposlenika.',
     icon: 'people',
     link: '/zaposlenici'
+  },
+  {
+    title: 'Izvještaji',
+    caption: 'Pregled izvještaja.',
+    icon: 'assessment',
+    link: '/izvjestaji'
   }
 ];
 

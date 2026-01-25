@@ -69,6 +69,13 @@ const routes: RouteRecordRaw[] = [
       { path: '', component: () => import('pages/ZaposleniciPage.vue') }
     ]
   },
+  {
+    path: '/izvjestaji',
+    component: () => import('layouts/MainLayout.vue'),
+    children: [
+      { path: '', component: () => import('pages/IzvjestajiPage.vue') }
+    ]
+  },
 
   // OVU PUŠTAMO ZADNJU
 

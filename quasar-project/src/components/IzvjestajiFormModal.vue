@@ -1,0 +1,40 @@
+<!-- src/components/IzvjestajFormModal.vue -->
+<template>
+    <q-dialog v-model="dialogModel" persistent>
+        <q-card style="min-width: 400px; max-width: 90vw;">
+            <q-card-actions align="right">
+                <q-btn label="Isprintaj" color="primary" />
+                <q-btn label="Preuzmi u PDF" color="primary" outline />
+                <q-btn label="Zatvori" flat color="grey" @click="close" />
+            </q-card-actions>
+        </q-card>
+    </q-dialog>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue';
+
+const props = defineProps<{
+    modelValue: boolean,
+}>();
+
+const emit = defineEmits<{
+    (e: 'update:modelValue', value: boolean): void;
+}>();
+
+const dialogModel = computed({
+    get: () => props.modelValue,
+    set: (val: boolean) => emit('update:modelValue', val),
+});
+
+const close = () => {
+    dialogModel.value = false;
+};
+</script>
+
+<style scoped lang="scss">
+h4 {
+    margin: 0;
+    color: #333;
+}
+</style>

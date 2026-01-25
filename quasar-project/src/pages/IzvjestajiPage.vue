@@ -16,21 +16,21 @@
                 label="Ispis Izvještaja o sastavu povjerenstava"
                 color="primary"
                 class="full-width"
-                @click="openModal"
+                @click="notImplemented()"
               />
 
               <q-btn
                 label="Ispis Izvještaja o sudjelovanju zaposlenika"
                 color="primary"
                 class="full-width"
-                @click="openModal"
+                @click="openModal('sudjelovanje')"
               />
 
               <q-btn
                 label="Ispis Izvještaja o isteku mandata"
                 color="primary"
                 class="full-width"
-                @click="openModal"
+                @click="notImplemented()"
               />
             </div>
           </q-card-section>
@@ -38,19 +38,27 @@
       </div>
     </div>
 
-    <!-- Modal -->
-    <IzvjestajFormModal v-model="showModal" />
+    <IzvjestajFormModal v-model="showModal" :reportType="reportType" />
   </q-page>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useQuasar } from 'quasar';
 import IzvjestajFormModal from 'components/IzvjestajiFormModal.vue';
 
-const showModal = ref(false);
+const $q = useQuasar();
 
-const openModal = () => {
+const showModal = ref(false);
+const reportType = ref<'sudjelovanje' | null>(null);
+
+const openModal = (type: 'sudjelovanje') => {
+  reportType.value = type;
   showModal.value = true;
+};
+
+const notImplemented = () => {
+  $q.notify({ type: 'warning', message: 'Ovaj izvještaj još nije implementiran.' });
 };
 </script>
 

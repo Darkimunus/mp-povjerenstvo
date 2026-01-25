@@ -8,6 +8,7 @@ import { zaposlenikovController } from "./controllers/zaposlenikovController.js"
 import { verifyToken } from "./middleware/verifyToken.js";
 
 import {akademskeGodineController} from "./controllers/akademskeGodineController.js";
+import { izvjestajiController } from "./controllers/izvjestajiController.js";
 
 //import za org. jedinice
 import { organizacijskeJediniceController } from "./controllers/organizacijskeJediniceController.js";
@@ -91,8 +92,12 @@ app.get("/api/povjerenstva/detalji/:idPovjerenstva",povjerenstvaController.getDe
 
 app.post("/api/povjerenstva-po-zaposleniku", povjerenstvaPoZaposlenikovController.create);
 
-// povjerenstva jednog zaposlenika
-app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);
+app.get(
+  "/api/izvjestaji/sudjelovanje-zaposlenika",
+  verifyToken,
+  izvjestajiController.sudjelovanjeZaposlenika
+);
+
 
 
 app.listen(3000, () =>

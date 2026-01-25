@@ -67,4 +67,37 @@ export const organizacijskeJediniceController = {
       res.status(status).json({ error: error.message });
     }
   },
+  // UREĐIVANJE ORG. JEDINICE
+update: async (req, res) => {
+  try {
+    const { idOrgJed } = req.params;
+    const { naziv_org_jed } = req.body;
+
+    if (!naziv_org_jed || !String(naziv_org_jed).trim()) {
+      return res.status(400).json({ error: "Naziv organizacijske jedinice je obavezan!" });
+    }
+
+    const existing = await OrganizacijskeJedinice.getById(Number(idOrgJed));
+    if (!existing) {
+      return res.status(404).json({ error: "Organizacijska jedinica nije pronađena." });
+    }
+
+    // dozvoli uređivanje samo ako je akademska godina aktivna
+    const isActive = await AkademskeGodine.isActive(Number(existing.ID_ak_godina));
+    if (!isActive) {
+      return res.status(403).json({
+        error: "Uređivanje je moguće samo u aktivnoj akademskoj godini.",
+      });
+    }
+
+    await OrganizacijskeJedinice.updateNaziv(Number(idOrgJed), String(naziv_org_jed).trim());
+
+    return res.status(200).json({
+      message: "Organizacijska jedinica je uspješno ažurirana!",
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+},
+
 };

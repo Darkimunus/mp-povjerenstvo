@@ -44,4 +44,31 @@ export const OrganizacijskeJedinice = {
       conn.release();
     }
   },
+  // ✅ NOVO: dohvat jedne org. jedinice po ID-u
+  getById: async (idOrgJed) => {
+    const conn = await pool.getConnection();
+    try {
+      const rows = await conn.query(
+        "SELECT ID_org_jed, naziv_org_jed, ID_ak_godina FROM db_organizacijske_jedinice WHERE ID_org_jed = ? LIMIT 1",
+        [Number(idOrgJed)]
+      );
+      return rows?.[0] ?? null;
+    } finally {
+      conn.release();
+    }
+  },
+
+  // ✅ NOVO: update naziva
+  updateNaziv: async (idOrgJed, naziv_org_jed) => {
+    const conn = await pool.getConnection();
+    try {
+      await conn.query(
+        "UPDATE db_organizacijske_jedinice SET naziv_org_jed = ? WHERE ID_org_jed = ?",
+        [String(naziv_org_jed), Number(idOrgJed)]
+      );
+      return true;
+    } finally {
+      conn.release();
+    }
+  },
 };

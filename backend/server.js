@@ -65,6 +65,10 @@ app.post("/api/akademske-godine", akademskeGodineController.create);
 // TRAŽILICA ORG. JEDINICE – MORA BITI PRIJE DONJE RUTE POPISA ORG. JEDINICA!
 app.get("/api/organizacijske-jedinice/search", organizacijskeJediniceController.searchByAkGodina);
 
+// UREĐIVANJE ORG. JEDINICE
+app.put("/api/organizacijske-jedinice/:idOrgJed", organizacijskeJediniceController.update);
+
+
 // KREIRANJE ORG. JEDINICE
 app.post("/api/organizacijske-jedinice", organizacijskeJediniceController.create);
 
@@ -75,6 +79,9 @@ app.get("/api/organizacijske-jedinice/:idAkGodina", organizacijskeJediniceContro
 app.get("/api/povjerenstva/search", povjerenstvaController.searchByAkGodina);
 //ZA POPIS POVJERENSTVA
 app.post("/api/povjerenstva", povjerenstvaController.create);
+// UREĐIVANJE POVJERENSTVA
+app.put("/api/povjerenstva/:idPovjerenstva", povjerenstvaController.update);
+//
 app.get("/api/povjerenstva/:idOrgJed", povjerenstvaController.getAllByOrgJed);
 
 

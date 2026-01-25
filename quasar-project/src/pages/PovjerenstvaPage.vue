@@ -65,6 +65,26 @@
       </q-card>
     </q-dialog>
 
+    <!-- DIALOG ZA UREĐIVANJE POVJERENSTVA -->
+<q-dialog v-model="showEditDialog">
+  <q-card class="q-pa-md" style="width: 460px; max-width: 95vw;">
+    <q-card-section>
+      <div class="text-h6">Uredi povjerenstvo</div>
+    </q-card-section>
+
+    <q-card-section class="q-gutter-md">
+      <q-input v-model="editNazivPov" label="Naziv povjerenstva" filled />
+      <q-input v-model="editOpisPov" label="Opis povjerenstva" type="textarea" autogrow filled />
+    </q-card-section>
+
+    <q-card-actions align="right">
+      <q-btn flat label="Odustani" @click="closeEditDialog" />
+      <q-btn color="primary" label="Spremi" @click="updatePovjerenstvo" />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
+
+
      <!-- TRAŽILICA + FILTER KOMPONENTA-->
        <SearchBarFilter
         default-filter="pov"
@@ -89,9 +109,26 @@
             class="year-img"
           />
           <q-card-section class="text-center">
-            <div class="text-h6">{{ povjerenstvo.naziv_povjerenstva }}</div>
-            <div class="text-caption q-mt-xs">{{ povjerenstvo.opis_povjerenstva }}</div>
-          </q-card-section>
+  <div class="povjerenstvo-title-wrapper">
+  <div class="text-h6 povjerenstvo-title">
+    {{ povjerenstvo.naziv_povjerenstva }}
+  </div>
+
+  <q-btn
+    v-if="isAktivnaGodina && String(route.params.idOrgJed) !== 'all'"
+    class="edit-btn"
+    flat
+    round
+    dense
+    icon="edit"
+    color="primary"
+    @click.stop="openEditDialog(povjerenstvo)"
+    aria-label="Uredi povjerenstvo"
+  />
+</div>
+
+  <div class="text-caption q-mt-xs">{{ povjerenstvo.opis_povjerenstva }}</div>
+</q-card-section>
         </q-card>
       </div>
     </div>
@@ -303,6 +340,12 @@ const closeCreateDialog = () => {
   newNazivPov.value = "";
   newOpisPov.value = "";
 };
+//  edit dialog state
+const showEditDialog = ref(false);
+const editPovId = ref<number | null>(null);
+const editNazivPov = ref("");
+const editOpisPov = ref("");
+
 
 const createPovjerenstvo = async () => {
   const idOrgJed = Number(route.params.idOrgJed);
@@ -345,6 +388,71 @@ const createPovjerenstvo = async () => {
     window.alert(msg);
   }
 };
+const openEditDialog = (p: Povjerenstvo) => {
+  if (!isAktivnaGodina.value) {
+    window.alert("Uređivanje je moguće samo u aktivnoj akademskoj godini.");
+    return;
+  }
+
+  editPovId.value = Number(p.ID_povjerenstva);
+  editNazivPov.value = String(p.naziv_povjerenstva ?? "");
+  editOpisPov.value = String(p.opis_povjerenstva ?? "");
+  showEditDialog.value = true;
+};
+
+const closeEditDialog = () => {
+  showEditDialog.value = false;
+  editPovId.value = null;
+  editNazivPov.value = "";
+  editOpisPov.value = "";
+};
+
+const updatePovjerenstvo = async () => {
+  if (!isAktivnaGodina.value) {
+    window.alert("Uređivanje je moguće samo u aktivnoj akademskoj godini.");
+    return;
+  }
+
+  if (!editPovId.value) {
+    window.alert("Ne mogu odrediti povjerenstvo.");
+    return;
+  }
+
+  if (!editNazivPov.value.trim()) {
+    window.alert("Unesite naziv povjerenstva!");
+    return;
+  }
+
+  if (!editOpisPov.value.trim()) {
+    window.alert("Unesite opis povjerenstva!");
+    return;
+  }
+
+  try {
+    const res = await axios.put(
+      `http://localhost:3000/api/povjerenstva/${editPovId.value}`,
+      {
+        naziv_povjerenstva: editNazivPov.value.trim(),
+        opis_povjerenstva: editOpisPov.value.trim(),
+      }
+    );
+
+    window.alert(res.data?.message || "Povjerenstvo je uspješno ažurirano!");
+    closeEditDialog();
+
+    const search = String(route.query.search ?? "");
+    await loadPovjerenstva(search);
+  } catch (err: unknown) {
+    console.error("UPDATE POV ERROR:", err);
+
+    let msg = "Greška pri uređivanju povjerenstva.";
+    if (axios.isAxiosError(err) && err.response) {
+      msg = err.response.data?.error || msg;
+    }
+    window.alert(msg);
+  }
+};
+
 </script>
 
 <style scoped lang="scss">
@@ -407,4 +515,20 @@ const createPovjerenstvo = async () => {
   justify-content: center;
   align-items: center;
 }
+.povjerenstvo-title-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center; // naslov ostaje centriran
+  align-items: center;
+}
+
+.povjerenstvo-title {
+  text-align: center;
+}
+
+.edit-btn {
+  position: absolute;
+  right: 0;
+}
+
 </style>

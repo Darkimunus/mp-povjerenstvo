@@ -79,5 +79,44 @@ export const povjerenstvaController = {
       res.status(500).json({ error: error.message });
     }
   },
+  // UREĐIVANJE POVJERENSTVA
+update: async (req, res) => {
+  try {
+    const { idPovjerenstva } = req.params;
+    const { naziv_povjerenstva, opis_povjerenstva } = req.body;
+
+    if (!naziv_povjerenstva || !String(naziv_povjerenstva).trim()) {
+      return res.status(400).json({ error: "Naziv povjerenstva je obavezan!" });
+    }
+
+    if (!opis_povjerenstva || !String(opis_povjerenstva).trim()) {
+      return res.status(400).json({ error: "Opis povjerenstva je obavezan!" });
+    }
+
+    const existing = await Povjerenstva.getById(Number(idPovjerenstva));
+    if (!existing) {
+      return res.status(404).json({ error: "Povjerenstvo nije pronađeno." });
+    }
+
+    // ✅ dozvoli uređivanje samo u aktivnoj akademskoj godini
+    // (provjera preko org. jedinice povjerenstva)
+    const ok = await Povjerenstva.isOrgJedInActiveYear(Number(existing.ID_org_jed));
+    if (!ok) {
+      return res.status(403).json({
+        error: "Uređivanje je moguće samo u aktivnoj akademskoj godini.",
+      });
+    }
+
+    await Povjerenstva.update(
+      Number(idPovjerenstva),
+      String(naziv_povjerenstva).trim(),
+      String(opis_povjerenstva).trim()
+    );
+
+    return res.status(200).json({ message: "Povjerenstvo je uspješno ažurirano!" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+},
 };
 

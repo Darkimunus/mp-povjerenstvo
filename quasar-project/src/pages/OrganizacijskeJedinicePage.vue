@@ -55,6 +55,27 @@
     </q-card-actions>
   </q-card>
 </q-dialog>
+<!-- DIALOG ZA UREĐIVANJE ORG. JEDINICE -->
+<q-dialog v-model="showEditDialog">
+  <q-card class="q-pa-md" style="width: 350px">
+    <q-card-section>
+      <div class="text-h6">Uredi organizacijsku jedinicu</div>
+    </q-card-section>
+
+    <q-card-section>
+      <q-input
+        v-model="editNazivOrgJed"
+        label="Naziv organizacijske jedinice"
+        filled
+      />
+    </q-card-section>
+
+    <q-card-actions align="right">
+      <q-btn flat label="Odustani" @click="closeEditDialog" />
+      <q-btn color="primary" label="Spremi" @click="updateOrgJedinica" />
+    </q-card-actions>
+  </q-card>
+</q-dialog>
 
 
      <!-- TRAŽILICA + FILTERI KOMPONENTA-->
@@ -81,8 +102,25 @@
             class="year-img"
           />
           <q-card-section class="text-center">
-            <div class="text-h6">{{ jedinica.naziv_org_jed }}</div>
-          </q-card-section>
+  <div class="orgjed-title-wrapper">
+    <div class="text-h6 orgjed-title">
+      {{ jedinica.naziv_org_jed }}
+    </div>
+
+    <q-btn
+      v-if="isAktivnaGodina"
+      class="edit-btn"
+      flat
+      round
+      dense
+      icon="edit"
+      color="primary"
+      @click.stop="openEditDialog(jedinica)"
+      aria-label="Uredi organizacijsku jedinicu"
+    />
+  </div>
+</q-card-section>
+
         </q-card>
       </div>
     </div>
@@ -137,6 +175,11 @@ const loading = ref(true);
 // Dialog za kreiranje org. jedinice
 const showCreateDialog = ref(false);
 const newNazivOrgJed = ref("");
+// Dialog za uređivanje org. jedinice
+const showEditDialog = ref(false);
+const editNazivOrgJed = ref("");
+const editOrgJedId = ref<number | null>(null);
+
 
 // Paginacija
 const currentPage = ref(1);
@@ -195,6 +238,57 @@ const createOrgJedinica = async () => {
     console.error(err);
 
     let msg = "Greška pri kreiranju organizacijske jedinice.";
+    if (axios.isAxiosError(err) && err.response) {
+      msg = err.response.data?.error || msg;
+    }
+    window.alert(msg);
+  }
+};
+const openEditDialog = (jedinica: OrgJedinica) => {
+  if (!isAktivnaGodina.value) {
+    window.alert("Uređivanje je moguće samo u aktivnoj akademskoj godini.");
+    return;
+  }
+  editOrgJedId.value = Number(jedinica.ID_org_jed);
+  editNazivOrgJed.value = String(jedinica.naziv_org_jed ?? "");
+  showEditDialog.value = true;
+};
+
+const closeEditDialog = () => {
+  showEditDialog.value = false;
+  editOrgJedId.value = null;
+  editNazivOrgJed.value = "";
+};
+
+const updateOrgJedinica = async () => {
+  if (!isAktivnaGodina.value) {
+    window.alert("Uređivanje je moguće samo u aktivnoj akademskoj godini.");
+    return;
+  }
+
+  if (!editOrgJedId.value) {
+    window.alert("Ne mogu odrediti organizacijsku jedinicu.");
+    return;
+  }
+
+  if (!editNazivOrgJed.value.trim()) {
+    window.alert("Unesite naziv organizacijske jedinice!");
+    return;
+  }
+
+  try {
+    const res = await axios.put(
+      `http://localhost:3000/api/organizacijske-jedinice/${editOrgJedId.value}`,
+      { naziv_org_jed: editNazivOrgJed.value.trim() }
+    );
+
+    window.alert(res.data?.message || "Organizacijska jedinica je uspješno ažurirana!");
+    closeEditDialog();
+    await loadOrgJedinice();
+  } catch (err: unknown) {
+    console.error("UPDATE ORG ERROR:", err);
+
+    let msg = "Greška pri uređivanju organizacijske jedinice.";
     if (axios.isAxiosError(err) && err.response) {
       msg = err.response.data?.error || msg;
     }
@@ -317,4 +411,20 @@ const openOrgJedinica = async (jedinicaId: number) => {
   justify-content: center;
   align-items: center;
 }
+.orgjed-title-wrapper {
+  position: relative;
+  display: flex;
+  justify-content: center; // naziv ostaje centriran
+  align-items: center;
+}
+
+.orgjed-title {
+  text-align: center;
+}
+
+.edit-btn {
+  position: absolute;
+  right: 0;
+}
+
 </style>

@@ -11,6 +11,15 @@ export const zaposlenikovController = {
     }
   },
 
+  getDeleted: async (req, res) => {
+    try {
+      const zaposlenici = await Zaposlenici.getDeleted();
+      res.json(zaposlenici);
+    } catch (error) {
+      res.status(500).json({ error: error.message });
+    }
+  },
+
   getById: async (req, res) => {
     try {
       const { id } = req.params;
@@ -29,7 +38,7 @@ export const zaposlenikovController = {
   updateById: async (req, res) => {
     try {
       const { id } = req.params;
-      const { ime_zaposlenika, prezime_zaposlenika, email, novaLozinka } = req.body;
+      const { ime_zaposlenika, prezime_zaposlenika, email, novaLozinka, korisnik_aplikacije } = req.body;
 
       // Get current user
       const existingUser = await Zaposlenici.getById(id);
@@ -52,6 +61,11 @@ export const zaposlenikovController = {
         email: email || existingUser.email
       };
 
+      // Handle korisnik_aplikacije field
+      if (korisnik_aplikacije !== undefined && korisnik_aplikacije !== null) {
+        updateData.korisnik_aplikacije = korisnik_aplikacije;
+      }
+
       // Hash password if provided
       if (novaLozinka) {
         updateData.lozinka = await bcrypt.hash(novaLozinka, 10);
@@ -69,7 +83,8 @@ export const zaposlenikovController = {
         ID_zaposlenika: updatedUser.ID_zaposlenika,
         ime_zaposlenika: updatedUser.ime_zaposlenika,
         prezime_zaposlenika: updatedUser.prezime_zaposlenika,
-        email: updatedUser.email
+        email: updatedUser.email,
+        korisnik_aplikacije: updatedUser.korisnik_aplikacije
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -77,7 +92,7 @@ export const zaposlenikovController = {
   },
   create: async (req, res) => {
     try {
-      const { ime_zaposlenika, prezime_zaposlenika, email } = req.body
+      const { ime_zaposlenika, prezime_zaposlenika, email, korisnik_aplikacije } = req.body
 
       if (!ime_zaposlenika || !prezime_zaposlenika || !email) {
         return res.status(400).json({ error: 'Sva polja su obavezna' })
@@ -94,7 +109,8 @@ export const zaposlenikovController = {
         ime_zaposlenika,
         prezime_zaposlenika,
         email,
-        lozinka: hashed
+        lozinka: hashed,
+        korisnik_aplikacije: korisnik_aplikacije ? 1 : 0
       })
 
       res.status(201).json(newUser)
@@ -110,13 +126,6 @@ export const zaposlenikovController = {
       const existing = await Zaposlenici.getById(id)
       if (!existing) {
         return res.status(404).json({ error: 'Zaposlenik nije pronađen' })
-      }
-
-      const hasRelations = await Zaposlenici.hasPovjerenstva(id)
-      if (hasRelations) {
-        return res.status(409).json({
-          error: 'Zaposlenik je povezan s povjerenstvima i ne može se obrisati'
-        })
       }
 
       await Zaposlenici.deleteById(id)
@@ -144,6 +153,58 @@ export const zaposlenikovController = {
 
 
       res.json({ message: 'Lozinka zadana na : povjerenstvo123 .' })
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+  },
+
+  toggleAppUser: async (req, res) => {
+    try {
+      const { id } = req.params
+      const existing = await Zaposlenici.getById(id)
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Zaposlenik nije pronađen' })
+      }
+
+      const newStatus = existing.korisnik_aplikacije ? 0 : 1
+      const updated = await Zaposlenici.updateById(id, { 
+        ime_zaposlenika: existing.ime_zaposlenika,
+        prezime_zaposlenika: existing.prezime_zaposlenika,
+        email: existing.email,
+        korisnik_aplikacije: newStatus 
+      })
+
+      res.json({ 
+        message: 'Status korisnika ažuriran',
+        korisnik_aplikacije: updated.korisnik_aplikacije 
+      })
+    } catch (error) {
+      res.status(500).json({ error: error.message })
+    }
+  },
+
+  restoreUser: async (req, res) => {
+    try {
+      const { id } = req.params
+      const existing = await Zaposlenici.getById(id)
+
+      if (!existing) {
+        return res.status(404).json({ error: 'Zaposlenik nije pronađen' })
+      }
+
+      const restored = await Zaposlenici.updateById(id, {
+        ime_zaposlenika: existing.ime_zaposlenika,
+        prezime_zaposlenika: existing.prezime_zaposlenika,
+        email: existing.email,
+        korisnik_aplikacije: existing.korisnik_aplikacije,
+        status_zaposlenika: 1
+      })
+
+      res.json({
+        message: 'Zaposlenik vraćen',
+        ID_zaposlenika: restored.ID_zaposlenika
+      })
     } catch (error) {
       res.status(500).json({ error: error.message })
     }

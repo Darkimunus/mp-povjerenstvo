@@ -41,6 +41,11 @@ export const authController = {
           return res.status(401).json({ error: "Neispravni podaci za prijavu" });
         }
 
+        // Check if user is an app user
+        if (user.korisnik_aplikacije === 0) {
+          return res.status(403).json({ error: "Više niste korisnik aplikacije, molimo Vas da kontaktirate adminstratora Vaše organizacije." });
+        }
+
         // Create JWT token
         const token = jwt.sign(
           { ID_zaposlenika: user.ID_zaposlenika, email: user.email },

@@ -101,7 +101,7 @@ app.post("/api/povjerenstva-po-zaposleniku", povjerenstvaPoZaposlenikovControlle
 // povjerenstva jednog zaposlenika
 app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);
 
-//1, IZVJEŠTAJ - SASTAV POVJERENSTAVA
+//1. IZVJEŠTAJ - SASTAV POVJERENSTAVA
 app.get (
   "/api/izvjestaji/sastav-povjerenstva",
   verifyToken,

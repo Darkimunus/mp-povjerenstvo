@@ -2,7 +2,7 @@
 
 <template>
   <q-dialog v-model="dialogModel" persistent>
-    <q-card style="min-width: 900px; max-width: 95vw;">
+    <q-card style="min-width: 750px; max-width: 95vw;">
 
       <!-- NASLOV -->
       <q-card-section>
@@ -37,9 +37,9 @@
       <q-separator />
 
       <!-- IZVJEŠTAJ -->
-      <q-card-section v-if="report" ref="reportRef">
+      <q-card-section v-if="report" ref="reportRef" >
         <div class="report-title">
-          Izvještaj o sastavu povjerenstva u {{ report.akademskaGodina }}
+          Izvještaj o sastavu povjerenstva u {{ akademskaGodinaLabel }} akademskoj godini
         </div>
 
         <div
@@ -65,21 +65,26 @@
               <tr v-for="(r, i) in items" :key="i">
                 <td>{{ r.ime_zaposlenika }} {{ r.prezime_zaposlenika }}</td>
                 <td>{{ r.uloga_clana }}</td>
-                <td>{{ r.zamjenik ? 'DA' : 'NE' }}</td>
+                <td>
+                    <span v-if="r.zamijenjeni_clan_ime">
+                        {{ r.zamijenjeni_clan_ime }} {{ r.zamijenjeni_clan_prezime }}
+                    </span>
+                </td>
                 <td>{{ r.mandat_od }} – {{ r.mandat_do }}</td>
                 <td class="num">{{ r.procjena_radnih_sati }}</td>
               </tr>
             </tbody>
           </table>
         </div>
+        
       </q-card-section>
 
       <q-separator />
 
-      <!-- AKCIJE -->
+      <!-- GUMBOVI -->
       <q-card-actions align="right">
-        <q-btn label="Isprintaj" :disable="!report" @click="print" />
-        <q-btn label="Preuzmi u PDF" :disable="!report" outline @click="downloadPdf" />
+        <q-btn label="Isprintaj" :disable="!report" color="light-blue"  @click="print" />
+        <q-btn label="Preuzmi u PDF" :disable="!report" color="primary"  @click="downloadPdf" />
         <q-btn label="Zatvori" flat @click="close" />
       </q-card-actions>
 
@@ -94,6 +99,8 @@ import { ref, computed, onMounted } from 'vue';
 import { api } from 'boot/axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+
+import NotoSansBase64 from 'src/assets/fonts/NotoSans-Regular.base64';
 
 type AkGodinaApi = {
   ID_ak_godina: number;
@@ -112,6 +119,8 @@ type StavkaPovjerenstva = {
   prezime_zaposlenika: string;
   uloga_clana: string;
   zamjenik: boolean;
+  zamijenjeni_clan_ime?: string;
+  zamijenjeni_clan_prezime?: string;
   mandat_od: string;
   mandat_do: string;
   procjena_radnih_sati: number | string;
@@ -135,6 +144,14 @@ const akGodineOptions = ref<AkGodinaOption[]>([]);
 const loading = ref(false);
 const report = ref<IzvjestajSastavResponse | null>(null);
 
+const reportRef = ref<HTMLElement | null>(null);
+    
+const akademskaGodinaLabel = computed(() => {
+  return akGodineOptions.value.find(
+    g => g.value === selectedAkGodinaId.value
+  )?.label ?? '';
+});
+
 const grouped = computed<Record<string, StavkaPovjerenstva[]>>(() => {
   if (!report.value || !Array.isArray(report.value.stavke)) return {};
 
@@ -144,7 +161,6 @@ const grouped = computed<Record<string, StavkaPovjerenstva[]>>(() => {
     return acc;
   }, {} as Record<string, StavkaPovjerenstva[]>);
 });
-
 
 const loadAkGodine = async () => {
   const { data } = await api.get<AkGodinaApi[]>('/akademske-godine');
@@ -174,37 +190,94 @@ const nowString = () =>
   new Date().toLocaleString('hr-HR');
 
 const downloadPdf = () => {
-  const doc = new jsPDF();
-  doc.text(`Izvještaj o sastavu povjerenstva`, 14, 14);
-  doc.text(`Generirano: ${nowString()}`, 14, 22);
+if (!report.value) return;
 
-  let currentY = 30;
+ const doc = new jsPDF('p', 'pt', 'a4'); 
+ const pageWidth = doc.internal.pageSize.getWidth(); 
 
-Object.entries(grouped.value).forEach(([key, rows]) => {
-  autoTable(doc, {
-    startY: currentY,
-    head: [['Ime', 'Uloga', 'Zamjenik', 'Mandat', 'Sati']],
-    body: rows.map((r) => [
-      `${r.ime_zaposlenika} ${r.prezime_zaposlenika}`,
+ doc.addFileToVFS('NotoSans.ttf', NotoSansBase64);
+ doc.addFont('NotoSans.ttf', 'NotoSans', 'normal');
+ doc.setFont('NotoSans');
+
+// // Generirano: ... lijevo ispod naslova 
+ doc.setFont('NotoSans', 'normal'); 
+ doc.setFontSize(10); 
+ doc.text(`Generirano: ${nowString()}`, 40, 30); //30px od vrha
+
+ // Naslov bold i centriran 
+ doc.setFont('NotoSans', 'bold'); 
+ doc.setFontSize(14); 
+ doc.text(
+  `Izvještaj o sastavu povjerenstva u ${akademskaGodinaLabel.value} akademskoj godini`,
+   pageWidth / 2, 80, { align: 'center' } //80px, centriran
+); //doc text zagrada
+
+let currentY = 120; //pocetna Y pozicija za povjerenstva (razmak ispod naslova) - tablice krecu tek nakon 90px
+
+Object.entries(grouped.value).forEach(([key, rows]) => { 
+// Dodavanje naziva povjerenstva i organizacijske jedinice 
+doc.setFont('NotoSans', 'bold'); 
+doc.setFontSize(12); 
+doc.text(key, 50, currentY); //razmak izmedu naslova i naziv povjerenstva
+currentY += 20; //razmak izmedu naslova i naziv povjerenstva
+
+// Mapiraj zamjenike na ime/prezime zamijenjenog člana 
+const bodyRows = rows.map(r => [ 
+     `${r.ime_zaposlenika} ${r.prezime_zaposlenika}`,
       r.uloga_clana,
-      r.zamjenik ? 'DA' : 'NE',
-      `${r.mandat_od} – ${r.mandat_do}`,
-      r.procjena_radnih_sati,
-    ]),
-    didDrawPage: (data) => {
-      doc.text(key, 14, data.settings.startY - 4);
-      if (data.cursor) {
-        currentY = data.cursor.y + 10;
-        } //if zagrada
-    }, //didDrawpage zagrada
-  });
-});
+      r.zamjenik && r.zamijenjeni_clan_ime
+        ? `${r.zamijenjeni_clan_ime} ${r.zamijenjeni_clan_prezime ?? ''}`
+        : '',
+    `${r.mandat_od} – ${r.mandat_do}`,
+     r.procjena_radnih_sati
+    ]); //bodyRows zagrada
+    
+    autoTable(doc, { 
+        startY: currentY, 
+        head: [['Ime i prezime', 'Uloga', 'Zamjenik', 'Mandat', 'Procjena sati']], 
+        body: bodyRows, 
 
-  doc.save('izvjestaj-sastav-povjerenstva.pdf');
-};
+        styles: {
+            font: 'NotoSans',
+            fontSize: 10,
+            cellPadding: 4,
+            overflow: 'linebreak',
+        },
+        headStyles: { 
+            fillColor: [0, 0, 0], // crna pozadina //#243355 -- ova plava boja za stupce
+            textColor: [255, 255, 255], // bijeli tekst 
+            fontStyle: 'bold', 
+            fontSize: 10 
+        }, 
+      
+        columnStyles: {
+            0: { cellWidth: 140 }, // Ime i prezime
+            1: { cellWidth: 100 },  // Uloga
+            2: { cellWidth: 140}, // Zamjenik
+            3: { cellWidth: 90 },  // Mandat
+            4: { cellWidth: 50, halign: 'center' },  // Sati
+        },
+        
+        //tableWidth: 'auto', 
+        
+        didDrawPage: (data) => { 
+            currentY = (data.cursor?.y ?? currentY) + 40; // razmak između tablica 
+        }, 
+    }); 
+}); 
+    doc.save('izvjestaj-sastav-povjerenstva.pdf'); 
+    }; 
+    
+    const print = () => {
+        if (!report.value) return;
+        window.print();
+    } //const print zagrada
 
-const print = () => window.print();
-const close = () => (dialogModel.value = false);
+    const close = () => { 
+        dialogModel.value = false; // resetiraj prethodni izvještaj i selekciju 
+        report.value = null; 
+        selectedAkGodinaId.value = null; 
+    };
 
 onMounted(loadAkGodine);
 
@@ -242,6 +315,7 @@ onMounted(loadAkGodine);
   border: 1px solid #000;
   padding: 8px;
   font-size: 12px;
+  
 }
 
 .report-table th {
@@ -264,5 +338,18 @@ onMounted(loadAkGodine);
   text-align: center;
   padding: 18px;
 }
+
+//Dodan poseban CSS da bi se q-dialog i q-card ispravno prikazivali na papiru prilikom printanja
+@media print {
+
+.q-card-actions, .q-select, q.btn, .row.justify-end {
+    display: none !important;
+}
+
+.q-dialog_inner {
+    overflow: visible !important;
+}
+
+} //@media zagrada
 
 </style>

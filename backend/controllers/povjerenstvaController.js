@@ -98,7 +98,7 @@ update: async (req, res) => {
       return res.status(404).json({ error: "Povjerenstvo nije pronađeno." });
     }
 
-    // ✅ dozvoli uređivanje samo u aktivnoj akademskoj godini
+    // dozvoli uređivanje samo u aktivnoj akademskoj godini
     // (provjera preko org. jedinice povjerenstva)
     const ok = await Povjerenstva.isOrgJedInActiveYear(Number(existing.ID_org_jed));
     if (!ok) {

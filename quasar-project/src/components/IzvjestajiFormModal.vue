@@ -2,8 +2,11 @@
 <template>
   <q-dialog v-model="dialogModel" persistent>
     <q-card style="min-width: 900px; max-width: 95vw;">
-      <q-card-section>
-        <div class="text-h6">Izvještaj o sudjelovanju zaposlenika</div>
+
+          <q-card-section>
+        <div class="text-h6">
+          Izvještaj o sudjelovanju zaposlenika
+        </div>
       </q-card-section>
 
       <q-separator />
@@ -108,6 +111,7 @@
 </template>
 
 <script setup lang="ts">
+
 import { computed, onMounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
@@ -271,7 +275,7 @@ watch(
   }
 );
 
-// ---- report ----
+// ---- 2. izvjestaj - sudjelovanje zaposlenika ----
 const generateReport = async () => {
   if (!selectedAkGodinaId.value || !selectedZaposlenikId.value) return;
 
@@ -347,6 +351,7 @@ onMounted(async () => {
     await Promise.all([loadAkGodine(), loadZaposlenici()]);
   }
 });
+
 </script>
 
 

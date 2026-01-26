@@ -1,6 +1,22 @@
 import { Izvjestaji } from "../models/izvjestaji.js";
 
 export const izvjestajiController = {
+
+  //// GET /api/izvjestaji/sastav-povjerenstava?idAkGodina=1
+  sastavPovjerenstava: async (req, res) => {
+    try {
+      const idAkGodina = Number(req.query.idAkGodina);
+      if (!idAkGodina) {
+        return res.status(400).json({ error: "Nedostaje idAkGodina." });
+      }
+
+      const report = await Izvjestaji.getSastavPovjerenstva({ idAkGodina });
+      res.json(report);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  },
+
   // GET /api/izvjestaji/sudjelovanje-zaposlenika?idAkGodina=1&idZaposlenika=2
   sudjelovanjeZaposlenika: async (req, res) => {
     try {
@@ -8,10 +24,10 @@ export const izvjestajiController = {
       const idZaposlenika = Number(req.query.idZaposlenika);
 
       if (!idAkGodina) {
-        return res.status(400).json({ error: "Nedostaje idAkGodina (query param)." });
+        return res.status(400).json({ error: "Nedostaje idAkGodina." });
       }
       if (!idZaposlenika) {
-        return res.status(400).json({ error: "Nedostaje idZaposlenika (query param)." });
+        return res.status(400).json({ error: "Nedostaje idZaposlenika." });
       }
 
       const report = await Izvjestaji.getSudjelovanjeZaposlenika({ idAkGodina, idZaposlenika });

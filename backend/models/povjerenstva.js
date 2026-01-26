@@ -54,6 +54,7 @@ export const Povjerenstva = {
     conn.release();
   }
 },
+
  create: async (naziv_povjerenstva, opis_povjerenstva, idOrgJed) => {
     const conn = await pool.getConnection();
     try {
@@ -91,31 +92,33 @@ export const Povjerenstva = {
     conn.release();
   }
 },
-// dohvat povjerenstva po ID-u
-getById: async (idPovjerenstva) => {
-  const conn = await pool.getConnection();
-  try {
-    const rows = await conn.query(
-      "SELECT ID_povjerenstva, naziv_povjerenstva, opis_povjerenstva, ID_org_jed FROM db_povjerenstva WHERE ID_povjerenstva = ? LIMIT 1",
-      [Number(idPovjerenstva)]
-    );
-    return rows?.[0] ?? null;
-  } finally {
-    conn.release();
-  }
-},
 
-//  update naziva + opisa
-update: async (idPovjerenstva, naziv_povjerenstva, opis_povjerenstva) => {
-  const conn = await pool.getConnection();
-  try {
-    await conn.query(
-      "UPDATE db_povjerenstva SET naziv_povjerenstva = ?, opis_povjerenstva = ? WHERE ID_povjerenstva = ?",
-      [String(naziv_povjerenstva), String(opis_povjerenstva), Number(idPovjerenstva)]
-    );
-    return true;
-  } finally {
-    conn.release();
-  }
-},
+  // dohvat povjerenstva po ID-u
+  getById: async (idPovjerenstva) => {
+    const conn = await pool.getConnection();
+    try {
+      const rows = await conn.query(
+        "SELECT ID_povjerenstva, naziv_povjerenstva, opis_povjerenstva, ID_org_jed FROM db_povjerenstva WHERE ID_povjerenstva = ? LIMIT 1",
+        [Number(idPovjerenstva)]
+      );
+      return rows?.[0] ?? null;
+    } finally {
+      conn.release();
+    }
+  },
+
+  //  update naziva + opisa
+  update: async (idPovjerenstva, naziv_povjerenstva, opis_povjerenstva) => {
+    const conn = await pool.getConnection();
+    try {
+      await conn.query(
+        "UPDATE db_povjerenstva SET naziv_povjerenstva = ?, opis_povjerenstva = ? WHERE ID_povjerenstva = ?",
+        [String(naziv_povjerenstva), String(opis_povjerenstva), Number(idPovjerenstva)]
+      );
+      return true;
+    } finally {
+      conn.release();
+    }
+  },
+
 };

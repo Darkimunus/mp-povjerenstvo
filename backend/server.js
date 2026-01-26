@@ -101,13 +101,19 @@ app.post("/api/povjerenstva-po-zaposleniku", povjerenstvaPoZaposlenikovControlle
 // povjerenstva jednog zaposlenika
 app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);
 
+//1, IZVJEŠTAJ - SASTAV POVJERENSTAVA
+app.get (
+  "/api/izvjestaji/sastav-povjerenstva",
+  verifyToken,
+  izvjestajiController.sastavPovjerenstava
+);
 
+//2. IZVJEŠTAJ - SUDJELOVANJE ZAPOSLENIKA
 app.get(
   "/api/izvjestaji/sudjelovanje-zaposlenika",
   verifyToken,
   izvjestajiController.sudjelovanjeZaposlenika
 );
-
 
 
 app.listen(3000, () =>

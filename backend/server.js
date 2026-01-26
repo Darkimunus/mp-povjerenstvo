@@ -115,6 +115,13 @@ app.get(
   izvjestajiController.sudjelovanjeZaposlenika
 );
 
+//3. izvještaj - MANDATI PRI ISTEKU
+app.get(
+  "/api/izvjestaji/mandati-pri-isteku",
+  verifyToken,
+  izvjestajiController.mandatiPriIsteku
+);
+
 
 app.listen(3000, () =>
   console.log("Backend server running on http://localhost:3000")

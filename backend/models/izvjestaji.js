@@ -5,15 +5,15 @@ export const Izvjestaji = {
    * 1. Izvještaj o sastavu povjerenstva za odabranu akademsku godinu.
    */
   getSastavPovjerenstva: async ({ idAkGodina }) => {
-  const conn = await pool.getConnection();
-  try {
-    const [akGodineRows] = await conn.query(
-      `SELECT godina FROM db_akademske_godine 
+    const conn = await pool.getConnection();
+    try {
+      const [akGodineRows] = await conn.query(
+        `SELECT godina FROM db_akademske_godine 
       WHERE ID_ak_godina = ? LIMIT 1`,
-      [idAkGodina]
-    );
+        [idAkGodina]
+      );
 
-    const rows = await conn.query(`
+      const rows = await conn.query(`
       SELECT
         p.ID_povjerenstva,
         p.naziv_povjerenstva,
@@ -33,14 +33,14 @@ export const Izvjestaji = {
       ORDER BY p.naziv_povjerenstva, ppz.uloga_clana
     `, [idAkGodina]);
 
-    return {
-      akademskaGodina: akGodineRows.length ? akGodineRows[0].godina : '',
-      stavke: rows
-    };
-  } finally {
-    conn.release();
-  }
-},
+      return {
+        akademskaGodina: akGodineRows.length ? akGodineRows[0].godina : '',
+        stavke: rows
+      };
+    } finally {
+      conn.release();
+    }
+  },
 
   /**
    * 2. Izvještaj o sudjelovanju zaposlenika u povjerenstvima za odabranu akademsku godinu.
@@ -112,4 +112,43 @@ export const Izvjestaji = {
       conn.release();
     }
   },
+
+  /**
+   * 3. Izvještaj: Mandati pri isteku (predsjednik / zamjenik predsjednika).
+   * Vraća sve zapise koji imaju kraj_mandata != '' i ulogu predsjednik/zamjenik.
+   * Filtriranje "unutar 3 mjeseca / status" radi frontend (jer je kraj_mandata VARCHAR).
+   */
+  getMandatiPriIsteku: async () => {
+    const conn = await pool.getConnection();
+    try {
+      const rows = await conn.query(
+        `
+        SELECT
+          z.ime_zaposlenika       AS ime,
+          z.prezime_zaposlenika   AS prezime,
+          ppz.kraj_mandata        AS krajMandata,
+          p.naziv_povjerenstva    AS povjerenstvo,
+          ppz.uloga_clana         AS uloga
+        FROM db_povjerenstva_po_zaposleniku ppz
+        JOIN db_zaposlenici z
+          ON z.ID_zaposlenika = ppz.ID_zaposlenika
+        JOIN db_povjerenstva p
+          ON p.ID_povjerenstva = ppz.ID_povjerenstva
+        WHERE
+          ppz.kraj_mandata <> ''
+          AND (
+            LOWER(ppz.uloga_clana) = 'predsjednik'
+            OR LOWER(ppz.uloga_clana) = 'zamjenik predsjednika'
+          )
+        ORDER BY
+          ppz.kraj_mandata, z.prezime_zaposlenika, z.ime_zaposlenika, p.naziv_povjerenstva
+        `
+      );
+
+      return rows;
+    } finally {
+      conn.release();
+    }
+  },
+
 };

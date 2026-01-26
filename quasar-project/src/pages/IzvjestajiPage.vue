@@ -30,7 +30,7 @@
                 label="Ispis Izvještaja o isteku mandata"
                 color="primary"
                 class="full-width"
-                @click="notImplemented()"
+                @click="showMandatiModal = true"
               />
             </div>
           </q-card-section>
@@ -40,6 +40,7 @@
 
     <IzvjestajFormModal v-model="showModal" :reportType="reportType" />
     <IzvjestajSastavPovjerenstvaModal v-model="showSastavModal" />
+    <IzvjestajMandatiPriIstekuModal v-model="showMandatiModal" />
 
   </q-page>
 </template>
@@ -47,7 +48,7 @@
 <script setup lang="ts">
 
 import { ref } from 'vue';
-import { useQuasar } from 'quasar';
+//import { useQuasar } from 'quasar';
 import IzvjestajFormModal from 'components/IzvjestajiFormModal.vue';
 
 //POČETAK KODA ZA 1. IZVJEŠTAJ - SASTAV POVJERENSTVA
@@ -58,7 +59,7 @@ const showSastavModal = ref(false);
 //KRAJ KODA ZA 1. IZVJEŠTAJ - SASTAV POVJERENSTVA
 
 //KOD ZA 2. IZVJEŠTAJ - SUDJELOVANJE ZAPOSLENIKA
-const $q = useQuasar();
+//const $q = useQuasar();
 
 const showModal = ref(false);
 
@@ -71,13 +72,14 @@ const openModal = (type: 'sudjelovanje' ) => {
 //KRAJ KODA ZA 2. IZVJEŠTAJ - SUDJELOVANJE ZAPOSLENIKA
 
 //POČETAK KODA ZA 3. IZVJEŠTAJ - KRAJ MANDATA
+import IzvjestajMandatiPriIstekuModal from 'components/IzvjestajMandatiPriIstekuModal.vue'
 
-
+const showMandatiModal = ref(false)
 //KRAJ KODA ZA 3. IZVJEŠTAJ - KRAJ MANDATA
 
-const notImplemented = () => {
-  $q.notify({ type: 'warning', message: 'Ovaj izvještaj još nije implementiran.' });
-};
+//const notImplemented = () => {
+  //$q.notify({ type: 'warning', message: 'Ovaj izvještaj još nije implementiran.' });
+//};
 
 </script>
 

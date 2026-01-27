@@ -157,7 +157,9 @@ function formatDate(v: unknown): string {
 }
 
 function isPresidentRole(roleRaw: unknown): boolean {
-    const r = String(roleRaw ?? '').toLowerCase().trim()
+    if (typeof roleRaw !== 'string') return false
+
+    const r = roleRaw.toLowerCase().trim()
     return r === 'predsjednik' || r === 'zamjenik predsjednika'
 }
 

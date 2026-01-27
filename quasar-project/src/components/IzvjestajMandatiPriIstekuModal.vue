@@ -12,7 +12,7 @@
             <q-card-section class="q-gutter-md">
                 <div class="row q-col-gutter-md items-end">
                     <div class="col-12 col-md-4">
-                        <q-input v-model.number="monthsWindow" type="number" min="1" max="24" label="Prozor (mjeseci)"
+                        <q-input v-model.number="monthsWindow" type="number" min="0" max="24" label="Prozor (mjeseci)"
                             outlined dense />
                     </div>
 
@@ -234,10 +234,13 @@ watch(() => props.modelValue, (open) => {
     if (open) void load()
 })
 
-watch(monthsWindow, () => {
-    if (!props.modelValue) return
-    if (loading.value) return
-    rows.value = computeRows(rawRows.value)
+watch(monthsWindow, (v) => {
+    if (typeof v !== 'number' || Number.isNaN(v)) {
+        monthsWindow.value = 0
+        return
+    }
+    if (v < 0) monthsWindow.value = 0
+    if (v > 24) monthsWindow.value = 24
 })
 
 async function buildPdfDoc(): Promise<jsPDF> {

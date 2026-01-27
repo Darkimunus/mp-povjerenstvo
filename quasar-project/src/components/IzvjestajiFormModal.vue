@@ -116,6 +116,9 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { useQuasar } from 'quasar';
 import { api } from 'boot/axios';
 import type { AxiosError } from 'axios';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import NotoSansBase64 from 'src/assets/fonts/NotoSans-Regular.base64';
 
 type Option = { label: string; value: number };
 
@@ -195,6 +198,7 @@ const zaposleniciOptions = ref<Option[]>([]);
 
 const report = ref<ReportResponse | null>(null);
 const reportRef = ref<HTMLElement | null>(null);
+const generatedDateTime = ref<string>('');
 
 // ---- loaders ----
 const loadAkGodine = async () => {
@@ -287,6 +291,7 @@ const generateReport = async () => {
       params: { idAkGodina: selectedAkGodinaId.value, idZaposlenika: selectedZaposlenikId.value },
     });
     report.value = data;
+    generatedDateTime.value = new Date().toLocaleString('hr-HR');
   } catch (e: unknown) {
     $q.notify({ type: 'negative', message: getErrMsg(e, 'Greška kod generiranja izvještaja.') });
   } finally {
@@ -341,8 +346,98 @@ const printReport = () => {
 };
 
 const downloadPdf = () => {
-  $q.notify({ type: 'info', message: 'U print dijalogu odaberi “Save as PDF” / “Spremi kao PDF”.' });
-  printReport();
+  if (!report.value) return;
+
+  const doc = new jsPDF('p', 'pt', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  doc.addFileToVFS('NotoSans.ttf', NotoSansBase64);
+  doc.addFont('NotoSans.ttf', 'NotoSans', 'normal');
+  doc.setFont('NotoSans');
+
+  // Generirano
+  doc.setFont('NotoSans', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Generirano: ${generatedDateTime.value}`, 40, 30);
+
+  // Naslov
+  doc.setFont('NotoSans', 'bold');
+  doc.setFontSize(14);
+  doc.text('Izvještaj o sudjelovanju zaposlenika', pageWidth / 2, 70, { align: 'center' });
+
+  // Podaci
+  doc.setFont('NotoSans', 'bold');
+  doc.setFontSize(10);
+  doc.text('Akademska godina:', 40, 100);
+  doc.setFont('NotoSans', 'normal');
+  doc.text(`${report.value.akademskaGodina.godina || report.value.akademskaGodina.id}`, 160, 100);
+  
+  doc.setFont('NotoSans', 'bold');
+  doc.text('Zaposlenik:', 40, 115);
+  doc.setFont('NotoSans', 'normal');
+  doc.text(`${report.value.zaposlenik.ime} ${report.value.zaposlenik.prezime}`, 160, 115);
+
+  let currentY = 140;
+  let tableEndY = currentY;
+
+  // Tablica
+  const bodyRows = report.value.stavke.map(r => [
+    r.naziv_org_jedinice,
+    r.naziv_povjerenstva,
+    r.uloga,
+    String(r.procjena_radnih_sati)
+  ]);
+
+  autoTable(doc, {
+    startY: currentY,
+    head: [['Naziv org. jedinice', 'Naziv povjerenstva', 'Uloga', 'Procjena radnih sati']],
+    body: bodyRows,
+    styles: {
+      font: 'NotoSans',
+      fontSize: 11,
+      cellPadding: 4,
+      overflow: 'linebreak',
+      lineWidth: 1,
+      lineColor: [0, 0, 0]
+    },
+    headStyles: {
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      fontStyle: 'bold',
+      fontSize: 10,
+      halign: 'center',
+      valign: 'middle'
+    },
+    bodyStyles: {
+      fillColor: [255, 255, 255],
+      textColor: [0, 0, 0],
+      lineWidth: 1,
+      lineColor: [0, 0, 0]
+    },
+    columnStyles: {
+      0: { cellWidth: 130, halign: 'left' },
+      1: { cellWidth: 130, halign: 'left' },
+      2: { cellWidth: 80, halign: 'center' },
+      3: { cellWidth: 80, halign: 'right' }
+    },
+    didDrawPage: (data) => {
+      tableEndY = data.cursor?.y ?? tableEndY;
+    }
+  });
+
+  // Totali
+  currentY = tableEndY + 15;
+  doc.setFont('NotoSans', 'bold');
+  doc.setFontSize(10);
+  doc.text(`Ukupan broj povjerenstava: ${report.value.ukupno.brojPovjerenstava}`, 40, currentY);
+  currentY += 15;
+  doc.text(
+    `Ukupna procjena radnih sati: ${formatHours(report.value.ukupno.ukupnaProcjenaRadnihSati)}`,
+    40,
+    currentY
+  );
+
+  doc.save('izvjestaj-sudjelovanje-zaposlenika.pdf');
 };
 
 // ---- lifecycle ----

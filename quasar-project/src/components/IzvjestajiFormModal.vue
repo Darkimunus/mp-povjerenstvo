@@ -102,9 +102,9 @@
       <q-separator />
 
       <q-card-actions align="right">
-        <q-btn label="Isprintaj" color="primary" :disable="!report" @click="printReport" />
-        <q-btn label="Preuzmi u PDF" color="primary" outline :disable="!report" @click="downloadPdf" />
-        <q-btn label="Zatvori" flat color="grey" @click="close" />
+        <q-btn label="Isprintaj" color="light-blue" :disable="!report" @click="printReport" />
+        <q-btn label="Preuzmi u PDF" color="primary"  :disable="!report" @click="downloadPdf" />
+        <q-btn label="Zatvori" flat  @click="close" />
       </q-card-actions>
     </q-card>
   </q-dialog>

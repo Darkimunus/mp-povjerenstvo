@@ -1,8 +1,8 @@
 <template>
   <div class="search-wrapper q-mt-md q-mb-lg">
+
     <!-- SEARCH -->
-    <div class="row justify-center items-center q-col-gutter-md">
-    <div class="col-7">
+    <div class="search-container">
       <q-input
         v-model="text"
         filled
@@ -15,19 +15,17 @@
         @clear="emitClear"
         @keyup.enter="emitSearch"
       />
-      </div>
 
-      <div class="col-auto">
       <q-btn
         color="primary"
         label="PRETRAŽI"
         unelevated
-        class="ml-xs" 
+        class="search-button" 
         @click="emitSearch"
       />
-      </div>
-    </div>
 
+    </div>
+ 
     <!-- FILTERI -->
     <div class="row justify-center q-mt-md q-gutter-sm ">
       <q-btn
@@ -77,16 +75,26 @@ const emitSearch = () => {
 <style scoped>
 
 .search-wrapper {
-  margin-bottom: 20px auto 40px auto;
-
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* sve ostaje centrirano */
+  margin: 20px 0 40px;
+}
+.search-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 100px ; /* razmak između gumba i okvira tražilice */
+  width: 100%;
+  max-width: 1100px;
 }
 .search-input {
   width: 700px;
-  display: inline-block;
+ /* display: inline-block; */
+ max-width: 100%;
 }
-
-.row.justify-center.items-center > .col-auto {
-  margin-left: -400px; /* - da okvir tražilice i gumb Pretraži bude na sredini ekrana */
+.search-btn {
+  white-space: nowrap;
 }
 
 </style>

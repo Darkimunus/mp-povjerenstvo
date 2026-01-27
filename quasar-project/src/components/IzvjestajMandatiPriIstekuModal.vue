@@ -3,8 +3,7 @@
         <q-card class="q-pa-md">
             <q-card-section class="row items-center q-pb-sm">
                 <div class="text-h6">
-                    Izvještaj: Mandati pri isteku
-                    <span v-if="akademskaGodina"> — za akademsku godinu: {{ akademskaGodina }}</span>
+                    Izvještaj: Mandati pri isteku<span v-if="akademskaGodina"> za akademsku godinu: {{ akademskaGodina }}</span>
                 </div>
                 <q-space />
                 <q-btn flat icon="close" @click="close" />
@@ -13,20 +12,10 @@
             <q-separator />
 
             <q-card-section class="q-gutter-md">
-                <div class="row q-col-gutter-md items-end">
+                <div class="row q-col-gutter-md items-end q-mb-lg">
                     <div class="col-12 col-md-4">
                         <q-input v-model.number="monthsWindow" type="number" min="0" max="24" label="Prozor (mjeseci)"
                             outlined dense />
-                    </div>
-
-                    <div class="col-12 col-md-8 row justify-end q-gutter-sm">
-                        <q-btn label="Osvježi" color="primary" :loading="loading" @click="load" />
-
-                        <q-btn label="Isprintaj" color="light-blue" :disable="rows.length === 0"
-                            @click="openPdfForPrint" />
-
-                        <q-btn label="Preuzmi u PDF" color="primary" :disable="rows.length === 0"
-                            @click="downloadPdf" />
                     </div>
                 </div>
 
@@ -38,6 +27,16 @@
                         <q-td>{{ formatDate(value) }}</q-td>
                     </template>
                 </q-table>
+
+                <div class="row justify-end q-gutter-sm q-mt-md">
+                    <q-btn label="Osvježi" color="primary" :loading="loading" @click="load" />
+
+                    <q-btn label="Isprintaj" color="light-blue" :disable="rows.length === 0"
+                        @click="openPdfForPrint" />
+
+                    <q-btn label="Preuzmi u PDF" color="primary" :disable="rows.length === 0"
+                        @click="downloadPdf" />
+                </div>
             </q-card-section>
         </q-card>
     </q-dialog>

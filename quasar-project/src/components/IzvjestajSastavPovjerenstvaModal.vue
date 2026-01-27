@@ -38,6 +38,7 @@
 
       <!-- IZVJEŠTAJ -->
       <q-card-section v-if="report" ref="reportRef" >
+        <div class="report-generated-date">Generirano: {{ generatedDateTime }}</div>
         <div class="report-title">
           Izvještaj o sastavu povjerenstva u {{ akademskaGodinaLabel }} akademskoj godini
         </div>
@@ -143,6 +144,7 @@ const selectedAkGodinaId = ref<number | null>(null);
 const akGodineOptions = ref<AkGodinaOption[]>([]);
 const loading = ref(false);
 const report = ref<IzvjestajSastavResponse | null>(null);
+const generatedDateTime = ref<string>('');
 
 const reportRef = ref<HTMLElement | null>(null);
     
@@ -177,6 +179,7 @@ const generateReport = async () => {
         params: { idAkGodina: selectedAkGodinaId.value },
     });
     report.value = data;
+    generatedDateTime.value = nowString();
    } //try zagrada
    catch (err) {
     console.error('Greška pri generiranju izvještaja!', err);
@@ -242,20 +245,30 @@ const bodyRows = rows.map(r => [
             fontSize: 10,
             cellPadding: 4,
             overflow: 'linebreak',
+            lineWidth: 1,
+            lineColor: [0, 0, 0]
         },
         headStyles: { 
-            fillColor: [0, 0, 0], // crna pozadina //#243355 -- ova plava boja za stupce
-            textColor: [255, 255, 255], // bijeli tekst 
+            fillColor: [255, 255, 255], // bijela pozadina - bez boje
+            textColor: [0, 0, 0], // crni tekst 
             fontStyle: 'bold', 
-            fontSize: 10 
-        }, 
+            fontSize: 10,
+            halign: 'center',
+            valign: 'middle'
+        },
+        bodyStyles: {
+            fillColor: [255, 255, 255], // bijela pozadina za redove
+            textColor: [0, 0, 0],
+            lineWidth: 1,
+            lineColor: [0, 0, 0]
+        },
       
         columnStyles: {
-            0: { cellWidth: 140 }, // Ime i prezime
-            1: { cellWidth: 100 },  // Uloga
-            2: { cellWidth: 140}, // Zamjenik
-            3: { cellWidth: 90 },  // Mandat
-            4: { cellWidth: 50, halign: 'center' },  // Sati
+            0: { cellWidth: 140, halign: 'left' }, // Ime i prezime - lijevo
+            1: { cellWidth: 100, halign: 'center' },  // Uloga - centar
+            2: { cellWidth: 140, halign: 'center' }, // Zamjenik - centar
+            3: { cellWidth: 90, halign: 'center' },  // Mandat - centar
+            4: { cellWidth: 50, halign: 'center' },  // Sati - centar
         },
         
         //tableWidth: 'auto', 
@@ -294,6 +307,10 @@ onMounted(loadAkGodine);
   text-align: center;
   font-weight: 700;
   font-size: 20px;
+}
+
+.report-generated-date {
+  display: none;
 }
 
 .report-subtitle {
@@ -342,14 +359,180 @@ onMounted(loadAkGodine);
 //Dodan poseban CSS da bi se q-dialog i q-card ispravno prikazivali na papiru prilikom printanja
 @media print {
 
-.q-card-actions, .q-select, q.btn, .row.justify-end {
-    display: none !important;
-}
+  * {
+    max-height: none !important;
+    height: auto !important;
+    min-height: auto !important;
+    line-height: normal !important;
+  }
 
-.q-dialog_inner {
+  @page {
+    margin: 0.1cm 0.5cm 0.5cm 0.5cm !important;
+    padding: 0 !important;
+    height: auto !important;
+  }
+
+  html, body {
+    height: auto !important;
+    max-height: none !important;
     overflow: visible !important;
-}
+    margin: 0 !important;
+    padding: 0 !important;
+    top: 0 !important;
+  }
 
-} //@media zagrada
+  /* SAKRI UI ELEMENTE */
+  .q-card-actions,
+  .q-select,
+  .q-btn,
+  .row.justify-end,
+  .text-h6,
+  .q-separator {
+    display: none !important;
+  }
+
+  /* UKLONI DIALOG LAYOUT */
+  .q-dialog,
+  .q-dialog__inner,
+  .q-dialog__backdrop,
+  .q-overlay {
+    position: static !important;
+    transform: none !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    break-inside: auto !important;
+  }
+
+  /* ISPRAVKA q-card */
+  .q-card {
+    position: relative !important;
+    min-width: auto !important;
+    max-width: 100% !important;
+    min-height: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    padding: 0 !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    display: block !important;
+  }
+
+  /* ISPRAVKA q-card-section */
+  .q-card-section {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* ISPRAVKA IZVJEŠTAJA */
+  .report-generated-date {
+    display: block !important;
+    font-size: 10px !important;
+    margin-bottom: 14px !important;
+    margin-top: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding: 0 !important;
+    text-align: left !important;
+  }
+
+  .report-title {
+    display: block !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    font-size: 14px !important;
+    margin: 8px 0 16px 0 !important;
+    padding: 0 !important;
+    page-break-after: avoid !important;
+  }
+
+  .q-mt-lg {
+    margin-top: 14px !important;
+    page-break-inside: auto !important;
+    page-break-before: auto !important;
+    break-inside: auto !important;
+    overflow: visible !important;
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  .text-subtitle1 {
+    display: block !important;
+    font-weight: bold;
+    margin: 7px 0 2px 0 !important;
+    padding: 0 !important;
+    page-break-inside: avoid !important;
+    page-break-before: auto !important;
+    break-inside: avoid !important;
+    break-before: auto !important;
+  }
+
+  /* ISPRAVKA TABLICA */
+  .report-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 5px 0 !important;
+    padding: 0 !important;
+    page-break-inside: auto !important;
+    page-break-before: auto !important;
+    break-inside: auto !important;
+    display: table !important;
+    font-size: 11px !important;
+  }
+
+  .report-table thead {
+    display: table-header-group !important;
+    page-break-inside: avoid !important;
+  }
+
+  .report-table tbody {
+    display: table-row-group !important;
+    break-inside: auto !important;
+  }
+
+  .report-table tr {
+    page-break-inside: avoid !important;
+    break-inside: auto !important;
+    orphans: 2 !important;
+    widows: 2 !important;
+    display: table-row !important;
+  }
+
+  .report-table th,
+  .report-table td {
+    border: 1px solid #000 !important;
+    padding: 4px !important;
+    font-size: 11px !important;
+    display: table-cell !important;
+  }
+
+}
+//@media zagrada
 
 </style>

@@ -2,7 +2,10 @@
     <q-dialog v-model="dialogModel" persistent maximized>
         <q-card class="q-pa-md">
             <q-card-section class="row items-center q-pb-sm">
-                <div class="text-h6">Izvještaj: Mandati pri isteku</div>
+                <div class="text-h6">
+                    Izvještaj: Mandati pri isteku
+                    <span v-if="akademskaGodina"> — za akademsku godinu: {{ akademskaGodina }}</span>
+                </div>
                 <q-space />
                 <q-btn flat icon="close" @click="close" />
             </q-card-section>
@@ -17,10 +20,13 @@
                     </div>
 
                     <div class="col-12 col-md-8 row justify-end q-gutter-sm">
-                        <q-btn label="Osvježi" icon="refresh" :loading="loading" @click="load" />
-                        <q-btn label="Preuzmi PDF" icon="download" :disable="rows.length === 0" @click="downloadPdf" />
-                        <q-btn label="Otvori PDF za ispis" icon="print" :disable="rows.length === 0"
+                        <q-btn label="Osvježi" color="primary" :loading="loading" @click="load" />
+
+                        <q-btn label="Isprintaj" color="light-blue" :disable="rows.length === 0"
                             @click="openPdfForPrint" />
+
+                        <q-btn label="Preuzmi u PDF" color="primary" :disable="rows.length === 0"
+                            @click="downloadPdf" />
                     </div>
                 </div>
 
@@ -47,6 +53,11 @@ import NotoSansUrl from 'src/assets/fonts/NotoSans-Regular.ttf?url'
 
 type Props = {
     modelValue: boolean
+}
+
+type ApiResponse = {
+    akademskaGodina?: string | null
+    stavke?: RawRow[]
 }
 
 type RawRow = {
@@ -83,6 +94,7 @@ const close = () => { dialogModel.value = false }
 const monthsWindow = ref<number>(3)
 const loading = ref<boolean>(false)
 const error = ref<string>('')
+const akademskaGodina = ref<string>('')
 
 const rawRows = ref<RawRow[]>([])
 const rows = ref<Row[]>([])
@@ -215,14 +227,25 @@ function getErrorMessage(e: unknown): string {
 async function load(): Promise<void> {
     loading.value = true
     error.value = ''
+
     try {
         const res = await api.get(ENDPOINT)
+        const data: ApiResponse | RawRow[] = res.data
 
-        const raw = (Array.isArray(res.data) ? res.data : (res.data?.data ?? [])) as RawRow[]
-        rawRows.value = raw
+        if (Array.isArray(data)) {
+            // stari format (samo array)
+            akademskaGodina.value = ''
+            rawRows.value = data
+        } else {
+            // novi format { akademskaGodina, stavke }
+            akademskaGodina.value = data.akademskaGodina ?? ''
+            rawRows.value = Array.isArray(data.stavke) ? data.stavke : []
+        }
+
         rows.value = computeRows(rawRows.value)
     } catch (e: unknown) {
         error.value = getErrorMessage(e)
+        akademskaGodina.value = ''
         rawRows.value = []
         rows.value = []
     } finally {
@@ -257,9 +280,18 @@ async function buildPdfDoc(): Promise<jsPDF> {
     const todayStr = new Date().toLocaleDateString('hr-HR')
 
     doc.setFontSize(14)
-    doc.text('Izvještaj: Mandati pri isteku', marginX, 40)
+    doc.text(
+        `Izvještaj: Mandati pri isteku${akademskaGodina.value ? ` — za akademsku godinu: ${akademskaGodina.value}` : ''}`,
+        marginX,
+        40
+    )
+
     doc.setFontSize(10)
-    doc.text(`Generirano: ${todayStr} | Prozor: ${monthsWindow.value} mj.`, marginX, 58)
+    doc.text(
+        `Generirano: ${todayStr} | Prozor: ${monthsWindow.value} mj.`,
+        marginX,
+        58
+    )
 
     autoTable(doc, {
         startY: 80,

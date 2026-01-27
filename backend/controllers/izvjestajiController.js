@@ -43,8 +43,8 @@ export const izvjestajiController = {
 
   mandatiPriIsteku: async (req, res) => {
     try {
-      const rows = await Izvjestaji.getMandatiPriIsteku();
-      res.json(rows);
+      const report = await Izvjestaji.getMandatiPriIsteku();
+      res.json(report); // { akademskaGodina, stavke }
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

@@ -124,6 +124,13 @@ export const Izvjestaji = {
   getMandatiPriIsteku: async () => {
     const conn = await pool.getConnection();
     try {
+      const agRows = await conn.query(
+        `SELECT godina
+        FROM db_akademske_godine
+        WHERE aktivna_ak_godina = 1
+        LIMIT 1`
+      );
+
       const rows = await conn.query(
         `
       SELECT
@@ -153,7 +160,10 @@ export const Izvjestaji = {
       `
       );
 
-      return rows;
+      return {
+        akademskaGodina: Array.isArray(agRows) && agRows.length ? agRows[0].godina : '',
+        stavke: rows
+      };
     } finally {
       conn.release();
     }

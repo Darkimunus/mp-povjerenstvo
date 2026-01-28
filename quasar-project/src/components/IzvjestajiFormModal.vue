@@ -64,6 +64,7 @@
       <!-- Report preview -->
       <q-card-section v-if="report" class="q-pa-md">
         <div ref="reportRef" class="report">
+          <div class="report-generated-date">Generirano: {{ generatedDateTime }}</div>
           <div class="report-title">Izvještaj o sudjelovanju zaposlenika</div>
           <div class="report-subtitle">
             <div><b>Akademska godina:</b> {{ report.akademskaGodina.godina || report.akademskaGodina.id }}</div>
@@ -319,6 +320,7 @@ const openPrintWindow = () => {
         <title>Izvještaj o sudjelovanju zaposlenika</title>
         <style>
           body { font-family: Arial, sans-serif; padding: 24px; }
+          .report-generated-date { font-size: 10px; margin-bottom: 14px; text-align: left; }
           .report-title { text-align: center; font-weight: 700; font-size: 20px; margin-bottom: 8px; }
           .report-subtitle { margin: 12px 0 16px 0; display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
           .report-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
@@ -454,6 +456,19 @@ onMounted(async () => {
 .report {
   border: 1px solid #000;
   padding: 16px;
+}
+
+.report-generated-date {
+  display: none;
+  font-size: 10px;
+  margin-bottom: 14px;
+  text-align: left;
+}
+
+@media print {
+  .report-generated-date {
+    display: block !important;
+  }
 }
 
 .report-title {

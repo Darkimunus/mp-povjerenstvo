@@ -13,79 +13,64 @@
 
       <!-- FORMA -->
       <q-card-section>
-        <q-select
-          v-model="selectedAkGodinaId"
-          :options="akGodineOptions"
-          label="Akademska godina"
-          emit-value
-          map-options
-          outlined
-          dense
-        />
+        <q-select v-model="selectedAkGodinaId" :options="akGodineOptions" label="Akademska godina" emit-value
+          map-options outlined dense />
 
         <div class="row justify-end q-mt-md">
-          <q-btn
-            label="Generiraj"
-            color="primary"
-            :disable="!selectedAkGodinaId"
-            :loading="loading"
-            @click="generateReport"
-          />
+          <q-btn label="Generiraj" color="primary" :disable="!selectedAkGodinaId" :loading="loading"
+            @click="generateReport" />
         </div>
       </q-card-section>
 
       <q-separator />
 
       <!-- IZVJEŠTAJ -->
-      <q-card-section v-if="report" ref="reportRef" >
-        <div class="report-generated-date">Generirano: {{ generatedDateTime }}</div>
-        <div class="report-title">
-          Izvještaj o sastavu povjerenstva u {{ akademskaGodinaLabel }} akademskoj godini
-        </div>
-
-        <div
-          v-for="(items, key) in grouped"
-          :key="key"
-          class="q-mt-lg"
-        >
-          <div class="text-subtitle1 text-bold">
-            {{ key }}
+      <q-card-section v-if="report">
+        <div ref="reportRef">
+          <div class="report-generated-date">Generirano: {{ generatedDateTime }}</div>
+          <div class="report-title">
+            Izvještaj o sastavu povjerenstva u {{ akademskaGodinaLabel }} akademskoj godini
           </div>
 
-          <table class="report-table">
-            <thead>
-              <tr>
-                <th>Ime i prezime</th>
-                <th>Uloga</th>
-                <th>Zamjenik</th>
-                <th>Mandat</th>
-                <th class="num">Procjena sati</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="(r, i) in items" :key="i">
-                <td>{{ r.ime_zaposlenika }} {{ r.prezime_zaposlenika }}</td>
-                <td>{{ r.uloga_clana }}</td>
-                <td>
+          <div v-for="(items, key) in grouped" :key="key" class="q-mt-lg">
+            <div class="text-subtitle1 text-bold">
+              {{ key }}
+            </div>
+
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Ime i prezime</th>
+                  <th>Uloga</th>
+                  <th>Zamjenik</th>
+                  <th>Mandat</th>
+                  <th class="num">Procjena sati</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(r, i) in items" :key="i">
+                  <td>{{ r.ime_zaposlenika }} {{ r.prezime_zaposlenika }}</td>
+                  <td>{{ r.uloga_clana }}</td>
+                  <td>
                     <span v-if="r.zamijenjeni_clan_ime">
-                        {{ r.zamijenjeni_clan_ime }} {{ r.zamijenjeni_clan_prezime }}
+                      {{ r.zamijenjeni_clan_ime }} {{ r.zamijenjeni_clan_prezime }}
                     </span>
-                </td>
-                <td>{{ r.mandat_od }} – {{ r.mandat_do }}</td>
-                <td class="num">{{ r.procjena_radnih_sati }}</td>
-              </tr>
-            </tbody>
-          </table>
+                  </td>
+                  <td>{{ r.mandat_od }} – {{ r.mandat_do }}</td>
+                  <td class="num">{{ r.procjena_radnih_sati }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-        
       </q-card-section>
 
       <q-separator />
 
       <!-- GUMBOVI -->
       <q-card-actions align="right">
-        <q-btn label="Isprintaj" :disable="!report" color="light-blue"  @click="print" />
-        <q-btn label="Preuzmi u PDF" :disable="!report" color="primary"  @click="downloadPdf" />
+        <q-btn label="Isprintaj" :disable="!report" color="light-blue" @click="print" />
+        <q-btn label="Preuzmi u PDF" :disable="!report" color="primary" @click="downloadPdf" />
         <q-btn label="Zatvori" flat @click="close" />
       </q-card-actions>
 
@@ -100,6 +85,7 @@ import { ref, computed, onMounted } from 'vue';
 import { api } from 'boot/axios';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { nextTick } from 'vue';
 
 import NotoSansBase64 from 'src/assets/fonts/NotoSans-Regular.base64';
 
@@ -147,7 +133,7 @@ const report = ref<IzvjestajSastavResponse | null>(null);
 const generatedDateTime = ref<string>('');
 
 const reportRef = ref<HTMLElement | null>(null);
-    
+
 const akademskaGodinaLabel = computed(() => {
   return akGodineOptions.value.find(
     g => g.value === selectedAkGodinaId.value
@@ -166,138 +152,245 @@ const grouped = computed<Record<string, StavkaPovjerenstva[]>>(() => {
 
 const loadAkGodine = async () => {
   const { data } = await api.get<AkGodinaApi[]>('/akademske-godine');
-    akGodineOptions.value = data.map((g) => ({
+  akGodineOptions.value = data.map((g) => ({
     label: g.godina,
     value: g.ID_ak_godina,
-    }));
+  }));
 };
 
 const generateReport = async () => {
   loading.value = true;
   try {
     const { data } = await api.get('/izvjestaji/sastav-povjerenstva', {
-        params: { idAkGodina: selectedAkGodinaId.value },
+      params: { idAkGodina: selectedAkGodinaId.value },
     });
     report.value = data;
     generatedDateTime.value = nowString();
-   } //try zagrada
-   catch (err) {
+  } //try zagrada
+  catch (err) {
     console.error('Greška pri generiranju izvještaja!', err);
-   } //catch zagrada
-   finally {
+  } //catch zagrada
+  finally {
     loading.value = false;
-   } //finally zagrada
+  } //finally zagrada
 }; //const gerenareReport zagrada
 
 const nowString = () =>
   new Date().toLocaleString('hr-HR');
 
 const downloadPdf = () => {
-if (!report.value) return;
+  if (!report.value) return;
 
- const doc = new jsPDF('p', 'pt', 'a4'); 
- const pageWidth = doc.internal.pageSize.getWidth(); 
+  const doc = new jsPDF('p', 'pt', 'a4');
+  const pageWidth = doc.internal.pageSize.getWidth();
 
- doc.addFileToVFS('NotoSans.ttf', NotoSansBase64);
- doc.addFont('NotoSans.ttf', 'NotoSans', 'normal');
- doc.setFont('NotoSans');
+  doc.addFileToVFS('NotoSans.ttf', NotoSansBase64);
+  doc.addFont('NotoSans.ttf', 'NotoSans', 'normal');
+  doc.setFont('NotoSans');
 
-// // Generirano: ... lijevo ispod naslova 
- doc.setFont('NotoSans', 'normal'); 
- doc.setFontSize(10); 
- doc.text(`Generirano: ${nowString()}`, 40, 30); //30px od vrha
+  // // Generirano: ... lijevo ispod naslova 
+  doc.setFont('NotoSans', 'normal');
+  doc.setFontSize(10);
+  doc.text(`Generirano: ${nowString()}`, 40, 30); //30px od vrha
 
- // Naslov bold i centriran 
- doc.setFont('NotoSans', 'bold'); 
- doc.setFontSize(14); 
- doc.text(
-  `Izvještaj o sastavu povjerenstva u ${akademskaGodinaLabel.value} akademskoj godini`,
-   pageWidth / 2, 80, { align: 'center' } //80px, centriran
-); //doc text zagrada
+  // Naslov bold i centriran 
+  doc.setFont('NotoSans', 'bold');
+  doc.setFontSize(14);
+  doc.text(
+    `Izvještaj o sastavu povjerenstva u ${akademskaGodinaLabel.value} akademskoj godini`,
+    pageWidth / 2, 80, { align: 'center' } //80px, centriran
+  ); //doc text zagrada
 
-let currentY = 120; //pocetna Y pozicija za povjerenstva (razmak ispod naslova) - tablice krecu tek nakon 90px
+  let currentY = 120; //pocetna Y pozicija za povjerenstva (razmak ispod naslova) - tablice krecu tek nakon 90px
 
-Object.entries(grouped.value).forEach(([key, rows]) => { 
-// Dodavanje naziva povjerenstva i organizacijske jedinice 
-doc.setFont('NotoSans', 'bold'); 
-doc.setFontSize(12); 
-doc.text(key, 50, currentY); //razmak izmedu naslova i naziv povjerenstva
-currentY += 20; //razmak izmedu naslova i naziv povjerenstva
+  Object.entries(grouped.value).forEach(([key, rows]) => {
+    // Dodavanje naziva povjerenstva i organizacijske jedinice 
+    doc.setFont('NotoSans', 'bold');
+    doc.setFontSize(12);
+    doc.text(key, 50, currentY); //razmak izmedu naslova i naziv povjerenstva
+    currentY += 20; //razmak izmedu naslova i naziv povjerenstva
 
-// Mapiraj zamjenike na ime/prezime zamijenjenog člana 
-const bodyRows = rows.map(r => [ 
-     `${r.ime_zaposlenika} ${r.prezime_zaposlenika}`,
+    // Mapiraj zamjenike na ime/prezime zamijenjenog člana 
+    const bodyRows = rows.map(r => [
+      `${r.ime_zaposlenika} ${r.prezime_zaposlenika}`,
       r.uloga_clana,
       r.zamjenik && r.zamijenjeni_clan_ime
         ? `${r.zamijenjeni_clan_ime} ${r.zamijenjeni_clan_prezime ?? ''}`
         : '',
-    `${r.mandat_od} – ${r.mandat_do}`,
-     r.procjena_radnih_sati
+      `${r.mandat_od} – ${r.mandat_do}`,
+      r.procjena_radnih_sati
     ]); //bodyRows zagrada
-    
-    autoTable(doc, { 
-        startY: currentY, 
-        head: [['Ime i prezime', 'Uloga', 'Zamjenik', 'Mandat', 'Procjena sati']], 
-        body: bodyRows, 
 
-        styles: {
-            font: 'NotoSans',
-            fontSize: 10,
-            cellPadding: 4,
-            overflow: 'linebreak',
-            lineWidth: 1,
-            lineColor: [0, 0, 0]
-        },
-        headStyles: { 
-            fillColor: [255, 255, 255], // bijela pozadina - bez boje
-            textColor: [0, 0, 0], // crni tekst 
-            fontStyle: 'bold', 
-            fontSize: 10,
-            halign: 'center',
-            valign: 'middle'
-        },
-        bodyStyles: {
-            fillColor: [255, 255, 255], // bijela pozadina za redove
-            textColor: [0, 0, 0],
-            lineWidth: 1,
-            lineColor: [0, 0, 0]
-        },
-      
-        columnStyles: {
-            0: { cellWidth: 140, halign: 'left' }, // Ime i prezime - lijevo
-            1: { cellWidth: 100, halign: 'center' },  // Uloga - centar
-            2: { cellWidth: 140, halign: 'center' }, // Zamjenik - centar
-            3: { cellWidth: 90, halign: 'center' },  // Mandat - centar
-            4: { cellWidth: 50, halign: 'center' },  // Sati - centar
-        },
-        
-        //tableWidth: 'auto', 
-        
-        didDrawPage: (data) => { 
-            currentY = (data.cursor?.y ?? currentY) + 40; // razmak između tablica 
-        }, 
-    }); 
-}); 
-    doc.save('izvjestaj-sastav-povjerenstva.pdf'); 
-    }; 
-    
-    const print = () => {
-        if (!report.value) return;
-        window.print();
-    } //const print zagrada
+    autoTable(doc, {
+      startY: currentY,
+      head: [['Ime i prezime', 'Uloga', 'Zamjenik', 'Mandat', 'Procjena sati']],
+      body: bodyRows,
 
-    const close = () => { 
-        dialogModel.value = false; // resetiraj prethodni izvještaj i selekciju 
-        report.value = null; 
-        selectedAkGodinaId.value = null; 
-    };
+      styles: {
+        font: 'NotoSans',
+        fontSize: 10,
+        cellPadding: 4,
+        overflow: 'linebreak',
+        lineWidth: 1,
+        lineColor: [0, 0, 0]
+      },
+      headStyles: {
+        fillColor: [255, 255, 255], // bijela pozadina - bez boje
+        textColor: [0, 0, 0], // crni tekst 
+        fontStyle: 'bold',
+        fontSize: 10,
+        halign: 'center',
+        valign: 'middle'
+      },
+      bodyStyles: {
+        fillColor: [255, 255, 255], // bijela pozadina za redove
+        textColor: [0, 0, 0],
+        lineWidth: 1,
+        lineColor: [0, 0, 0]
+      },
+
+      columnStyles: {
+        0: { cellWidth: 140, halign: 'left' }, // Ime i prezime - lijevo
+        1: { cellWidth: 100, halign: 'center' },  // Uloga - centar
+        2: { cellWidth: 140, halign: 'center' }, // Zamjenik - centar
+        3: { cellWidth: 90, halign: 'center' },  // Mandat - centar
+        4: { cellWidth: 50, halign: 'center' },  // Sati - centar
+      },
+
+      //tableWidth: 'auto', 
+
+      didDrawPage: (data) => {
+        currentY = (data.cursor?.y ?? currentY) + 40; // razmak između tablica 
+      },
+    });
+  });
+  doc.save('izvjestaj-sastav-povjerenstva.pdf');
+};
+
+const print = async () => {
+  if (!report.value || !reportRef.value) return;
+
+  // Make sure DOM is fully updated before cloning the report
+  await nextTick();
+
+  const reportHtml = reportRef.value.outerHTML;
+
+  const printCss = `
+    @page { margin: 10mm 8mm; }
+    html, body { margin: 0; padding: 0; }
+    body { font-family: Arial, sans-serif; color: #000; }
+
+    .report-generated-date {
+      display: block !important;
+      font-size: 10px !important;
+      margin: 0 0 10px 0 !important;
+      text-align: left !important;
+    }
+
+    .report-title {
+      text-align: center !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      margin: 8px 0 16px 0 !important;
+      break-after: avoid-page;
+    }
+
+    .text-subtitle1 {
+      font-weight: 700 !important;
+      margin: 10px 0 6px 0 !important;
+      break-after: avoid-page;
+    }
+
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      font-size: 11px !important;
+      margin: 0 0 12px 0 !important;
+    }
+    th, td {
+      border: 1px solid #000 !important;
+      padding: 4px !important;
+      vertical-align: top !important;
+    }
+
+    thead { display: table-header-group !important; } /* repeat header on each page */
+    tr { break-inside: avoid-page; page-break-inside: avoid; }
+  `;
+
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  iframe.setAttribute('aria-hidden', 'true');
+
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    document.body.removeChild(iframe);
+    return;
+  }
+
+  doc.open();
+  doc.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>Izvještaj</title>
+        <style>${printCss}</style>
+      </head>
+      <body>${reportHtml}</body>
+    </html>
+  `);
+  doc.close();
+
+  // ---- FIX: print only once (onload OR fallback) ----
+  let printed = false;
+
+  const cleanup = () => {
+    if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+  };
+
+  const doPrintOnce = () => {
+    if (printed) return;
+    printed = true;
+
+    const win = iframe.contentWindow;
+    if (!win) return;
+
+    win.focus();
+    win.print();
+
+    // cleanup after print dialog closes (best effort)
+    // afterprint isn't 100% consistent, so keep your timeout cleanup too
+    win.addEventListener('afterprint', cleanup, { once: true });
+    setTimeout(cleanup, 500);
+  };
+
+  // Wait until iframe is ready, then print
+  iframe.onload = doPrintOnce;
+
+  // Some browsers won't fire onload for about:blank + document.write reliably.
+  // This fallback covers that case, but won't double-print now.
+  setTimeout(doPrintOnce, 50);
+};
+
+
+const close = () => {
+  dialogModel.value = false; // resetiraj prethodni izvještaj i selekciju 
+  report.value = null;
+  selectedAkGodinaId.value = null;
+};
 
 onMounted(loadAkGodine);
 
 </script>
 
 <style scoped lang="scss">
-
 .report {
   border: 1px solid #000;
   padding: 16px;
@@ -332,7 +425,7 @@ onMounted(loadAkGodine);
   border: 1px solid #000;
   padding: 8px;
   font-size: 12px;
-  
+
 }
 
 .report-table th {
@@ -372,7 +465,8 @@ onMounted(loadAkGodine);
     height: auto !important;
   }
 
-  html, body {
+  html,
+  body {
     height: auto !important;
     max-height: none !important;
     overflow: visible !important;
@@ -533,6 +627,5 @@ onMounted(loadAkGodine);
   }
 
 }
-//@media zagrada
 
-</style>
+//@media zagrada</style>

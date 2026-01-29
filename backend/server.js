@@ -58,7 +58,7 @@ app.post("/api/zaposlenici", verifyToken, zaposlenikovController.create);
 // Delete user
 app.delete("/api/zaposlenici/:id", verifyToken, zaposlenikovController.deleteById);
 // Reset password
-app.post("/api/zaposlenici/:id/reset-password", verifyToken, zaposlenikovController.resetPassword);
+// app.post("/api/zaposlenici/:id/reset-password", verifyToken, zaposlenikovController.resetPassword);
 // Toggle app user status
 app.post("/api/zaposlenici/:id/toggle-app-user", verifyToken, zaposlenikovController.toggleAppUser);
 // Restore user

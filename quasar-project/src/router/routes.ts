@@ -9,10 +9,10 @@ const routes: RouteRecordRaw[] = [
     path: '/login',
     component: () => import('pages/LoginPage.vue'),
   },
-  {
+  /*{
     path: '/change-password',
     component: () => import('pages/PromjenaLozinkePage.vue'),
-  },
+  },*/
 /////////
 //STRANICA POPISA ORGANIZACIJSKIH JEDINICA
   {

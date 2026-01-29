@@ -34,13 +34,7 @@
 
     <!--  GUMBOVI -->
     <div class="row justify-end q-mb-md q-gutter-sm">
-      <q-btn
-        v-if="isAktivnaGodina"
-        outline
-        color="primary"
-        label="Uredi"
-        @click="toggleEditMode"
-      />
+        <!-- Removed toggle 'Uredi' button per UX request -->
 
       <q-btn
         v-if="isAktivnaGodina"
@@ -63,6 +57,10 @@
           </div>
         </q-card-section>
 
+        <q-banner v-if="showUlogaWarning" dense class="bg-orange-2 text-orange-9 q-mb-sm">
+          Promijenili ste ulogu. Molimo ispravite procjenu sati.
+        </q-banner>
+
         <q-card-section class="q-gutter-md">
           <q-select
             v-model="newClanIdZaposlenika"
@@ -73,7 +71,6 @@
             map-options
             label="Zaposlenik"
             filled
-            :disable="isEditing"
           />
 
           <q-select
@@ -142,7 +139,7 @@
         <template v-slot:body-cell-akcije="props">
           <q-td :props="props" class="text-center">
             <q-btn
-              v-if="editMode && isAktivnaGodina"
+              v-if="isAktivnaGodina"
               flat
               round
               dense
@@ -163,7 +160,7 @@
 
 <script setup lang="ts">
 
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted, computed, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 
@@ -178,8 +175,7 @@ const nazivPovjerenstva = ref<string>("");
 const opisPovjerenstva = ref<string>("");
 const isAktivnaGodina = ref<boolean>(false);
 
-// edit mode / edit state
-const editMode = ref<boolean>(false);
+// edit state
 const isEditing = ref<boolean>(false);
 const editingPpzId = ref<number | null>(null);
 
@@ -205,6 +201,11 @@ type ZaposlenikDTO = {
   prezime_zaposlenika: string;
 };
 
+// Raw employee object returned by the API may include status_zaposlenika
+interface ZaposlenikRaw extends ZaposlenikDTO {
+  status_zaposlenika?: number | string;
+}
+
 // state za dialog + inputi
 const showCreateDialog = ref(false);
 
@@ -214,6 +215,11 @@ const newClanPocetak = ref<string>("");
 const newClanKraj = ref<string>("");
 const newClanSati = ref<string>("");
 const newClanZamijenjeni = ref<number | null>(null);
+
+// role-change warning
+const originalUloga = ref<string | null>(null);
+const showUlogaWarning = ref(false);
+const originalSati = ref<string | null>(null);
 
 const ulogeOptions = ["Predsjednik", "Član", "Zamjenik predsjednika"];
 
@@ -229,21 +235,28 @@ const baseColumns = [
   {
     name: "zamjena",
     label: "Zamijenjeni član",
-    field: (row: ClanRow) =>
-      row.zamjena_ime ? `${row.zamjena_ime} ${row.zamjena_prezime}` : "-"
+    field: (row: ClanRow) => {
+      // If backend stored the member themself as zamijenjeni_clan (to satisfy NOT NULL),
+      // treat that as 'no replacement chosen' and show an empty cell.
+      if (!row.zamjena_ime) return "";
+      if (row.zamijenjeni_clan != null && row.ID_zaposlenika != null && Number(row.zamijenjeni_clan) === Number(row.ID_zaposlenika)) {
+        return "";
+      }
+      return `${row.zamjena_ime} ${row.zamjena_prezime}`;
+    }
   },
   { name: "uloga", label: "Uloga", field: "uloga_clana" },
   { name: "pocetak", label: "Početak mandata", field: "pocetak_mandata" },
-  { name: "kraj", label: "Kraj mandata", field: "kraj_mandata" },
+  { name: "kraj", label: "Kraj mandata", field: (row: ClanRow) => (row.kraj_mandata ? row.kraj_mandata : "") },
   { name: "sati", label: "Procjena sati", field: "procjena_radnih_sati" },
 ];
 
 const columns = computed(() => {
   // akcije samo kad je editMode true (da se stupac ne prikazuje stalno)
-  if (!editMode.value) return baseColumns;
+  // Always include actions column (labelled "Uredi"); buttons shown only for active year
   return [
     ...baseColumns,
-    { name: "akcije", label: "", field: () => "", align: "center" as const }
+    { name: "akcije", label: "Uredi", field: () => "", align: "center" as const }
   ];
 });
 
@@ -267,15 +280,18 @@ const loadZaposleniciOptions = async () => {
       ? { headers: { Authorization: `Bearer ${token}` } }
       : {};
 
-    const res = await axios.get<ZaposlenikDTO[]>(
+    const res = await axios.get<ZaposlenikRaw[]>(
       "http://localhost:3000/api/zaposlenici",
       config
     );
 
-    zaposleniciOptions.value = (res.data ?? []).map((z: ZaposlenikDTO) => ({
-      value: Number(z.ID_zaposlenika),
-      label: `${z.prezime_zaposlenika} ${z.ime_zaposlenika}`,
-    }));
+    // Only include active employees (status_zaposlenika === 1)
+    zaposleniciOptions.value = (res.data ?? [])
+      .filter((z: ZaposlenikRaw) => Number(z.status_zaposlenika || 0) === 1)
+      .map((z: ZaposlenikRaw) => ({
+        value: Number(z.ID_zaposlenika),
+        label: `${z.prezime_zaposlenika} ${z.ime_zaposlenika}`,
+      }));
   } catch (err) {
     console.error("LOAD ZAPOSLENICI ERROR:", err);
     zaposleniciOptions.value = [];
@@ -293,6 +309,8 @@ const openCreateDialog = async () => {
   }
   isEditing.value = false;
   editingPpzId.value = null;
+  originalUloga.value = null;
+  showUlogaWarning.value = false;
   showCreateDialog.value = true;
 };
 
@@ -307,15 +325,11 @@ const closeCreateDialog = () => {
 
   isEditing.value = false;
   editingPpzId.value = null;
+  originalUloga.value = null;
+  showUlogaWarning.value = false;
 };
 
-const toggleEditMode = () => {
-  if (!isAktivnaGodina.value) {
-    window.alert("Uređivanje članova moguće je samo u aktivnoj akademskoj godini.");
-    return;
-  }
-  editMode.value = !editMode.value;
-};
+// `toggleEditMode` removed — actions column now always visible per UX.
 
 //  refresh članova
 const refreshClanovi = async () => {
@@ -347,6 +361,8 @@ const openEditClanDialog = async (row: ClanRow) => {
 
   newClanIdZaposlenika.value = Number(row.ID_zaposlenika);
   newClanUloga.value = row.uloga_clana ?? null;
+  originalUloga.value = row.uloga_clana ?? null;
+  originalSati.value = row.procjena_radnih_sati ?? null;
   newClanPocetak.value = row.pocetak_mandata ?? "";
   newClanKraj.value = row.kraj_mandata ?? "";
   newClanSati.value = row.procjena_radnih_sati ?? "";
@@ -354,6 +370,15 @@ const openEditClanDialog = async (row: ClanRow) => {
 
   showCreateDialog.value = true;
 };
+
+// watch for role changes while editing to show the banner
+watch(newClanUloga, (val) => {
+  if (isEditing.value && originalUloga.value != null) {
+    showUlogaWarning.value = String(val || "") !== String(originalUloga.value || "");
+  } else {
+    showUlogaWarning.value = false;
+  }
+});
 
 // create/update član/mandat
 const saveClan = async () => {
@@ -382,6 +407,16 @@ const saveClan = async () => {
   if (!newClanSati.value.toString().trim()) {
     window.alert("Unesi procjenu radnih sati.");
     return;
+  }
+
+  // If editing: disallow saving when role changed but procjena sati not updated
+  if (isEditing.value && originalUloga.value != null && showUlogaWarning.value) {
+    const orig = String(originalSati.value ?? "").trim();
+    const curr = String(newClanSati.value ?? "").trim();
+    if (curr === orig) {
+      window.alert("Promijenili ste ulogu. Molimo ispravite procjenu sati.");
+      return;
+    }
   }
 
   // provjera datuma

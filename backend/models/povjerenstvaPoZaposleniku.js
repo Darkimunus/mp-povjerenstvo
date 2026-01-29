@@ -24,6 +24,8 @@ export const PovjerenstvaPoZaposleniku = {
       const rows = await conn.query(
         `
         SELECT
+          ppz.ID_zaposlenika,
+          ppz.zamijenjeni_clan,
           ppz.ID_povjerenstva_po_zaposleniku,
           ppz.uloga_clana,
           ppz.pocetak_mandata,
@@ -107,6 +109,65 @@ export const PovjerenstvaPoZaposleniku = {
     );
     if (!rows?.[0]) return false;
     return Number(rows[0].aktivna_ak_godina) === 1;
+  } finally {
+    conn.release();
+  }
+},
+
+// update člana/mandata
+update: async (idPpz, {
+  uloga_clana,
+  pocetak_mandata,
+  kraj_mandata,
+  procjena_radnih_sati,
+  zamijenjeni_clan,
+}) => {
+  const conn = await pool.getConnection();
+  try {
+    // dohvat postojećeg reda (treba nam ID_zaposlenika zbog zamijenjeni fallback-a)
+    const existingRows = await conn.query(
+      `
+      SELECT ID_zaposlenika
+      FROM db_povjerenstva_po_zaposleniku
+      WHERE ID_povjerenstva_po_zaposleniku = ?
+      LIMIT 1
+      `,
+      [Number(idPpz)]
+    );
+
+    if (!existingRows?.[0]) {
+      return { ok: false, notFound: true };
+    }
+
+    const existingIdZaposlenika = Number(existingRows[0].ID_zaposlenika);
+
+    // ako zamijenjeni_clan nije odabran: postavi na sebe (radi NOT NULL + FK kao i create)
+    const zamijenjeni = zamijenjeni_clan
+      ? Number(zamijenjeni_clan)
+      : existingIdZaposlenika;
+
+    await conn.query(
+      `
+      UPDATE db_povjerenstva_po_zaposleniku
+      SET
+        uloga_clana = ?,
+        pocetak_mandata = ?,
+        kraj_mandata = ?,
+        procjena_radnih_sati = ?,
+        zamijenjeni_clan = ?
+      WHERE ID_povjerenstva_po_zaposleniku = ?
+      `,
+      [
+        String(uloga_clana),
+        String(pocetak_mandata),
+        kraj_mandata ? String(kraj_mandata) : "",
+        String(procjena_radnih_sati),
+        zamijenjeni,
+        Number(idPpz),
+      ]
+    );
+
+    return { ok: true };
   } finally {
     conn.release();
   }

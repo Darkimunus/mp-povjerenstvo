@@ -98,6 +98,9 @@ app.get("/api/povjerenstva/detalji/:idPovjerenstva",povjerenstvaController.getDe
 
 app.post("/api/povjerenstva-po-zaposleniku", povjerenstvaPoZaposlenikovController.create);
 
+// UREĐIVANJE ČLANA/MANDATA
+app.put("/api/povjerenstva-po-zaposleniku/:idPpz", povjerenstvaPoZaposlenikovController.update);
+
 // povjerenstva jednog zaposlenika
 app.get("/api/povjerenstva-po-zaposleniku/zaposlenik/:idZaposlenika", povjerenstvaPoZaposlenikovController.getByZaposlenik);
 

@@ -32,27 +32,57 @@
       </q-card-section>
     </q-card>
 
-    <!--  GUMB ZA DODAVANJE ČLANA -->
-    <div class="row justify-end q-mb-md">
-      <q-btn v-if="isAktivnaGodina" color="primary" label="Dodaj člana" @click="openCreateDialog" />
+    <!--  GUMBOVI -->
+    <div class="row justify-end q-mb-md q-gutter-sm">
+      <q-btn
+        v-if="isAktivnaGodina"
+        outline
+        color="primary"
+        label="Uredi"
+        @click="toggleEditMode"
+      />
+
+      <q-btn
+        v-if="isAktivnaGodina"
+        color="primary"
+        label="Dodaj člana"
+        @click="openCreateDialog"
+      />
 
       <div v-else class="text-center full-width" style="opacity: 0.8;">
-        Dodavanje članova moguće je samo u akademskoj godini.
+        Dodavanje/uređivanje članova moguće je samo u aktivnoj akademskoj godini.
       </div>
     </div>
 
-    <!-- DIALOG ZA DODAVANJE ČLANA -->
+    <!-- DIALOG ZA DODAVANJE/UREĐIVANJE ČLANA -->
     <q-dialog v-model="showCreateDialog">
       <q-card class="q-pa-md" style="width: 520px; max-width: 95vw;">
         <q-card-section>
-          <div class="text-h6">Dodaj člana povjerenstva</div>
+          <div class="text-h6">
+            {{ isEditing ? "Uredi člana povjerenstva" : "Dodaj člana povjerenstva" }}
+          </div>
         </q-card-section>
 
         <q-card-section class="q-gutter-md">
-          <q-select v-model="newClanIdZaposlenika" :options="zaposleniciOptions" option-value="value"
-            option-label="label" emit-value map-options label="Zaposlenik" filled />
+          <q-select
+            v-model="newClanIdZaposlenika"
+            :options="zaposleniciOptions"
+            option-value="value"
+            option-label="label"
+            emit-value
+            map-options
+            label="Zaposlenik"
+            filled
+            :disable="isEditing"
+          />
 
-          <q-select v-model="newClanUloga" :options="ulogeOptions" label="Uloga" filled />
+          <q-select
+            v-model="newClanUloga"
+            :options="ulogeOptions"
+            label="Uloga"
+            filled
+            clearable
+          />
 
           <!-- POČETAK MANDATA -->
           <q-input v-model="newClanPocetak" label="Početak mandata" filled readonly>
@@ -93,39 +123,37 @@
 
         <q-card-actions align="right">
           <q-btn flat label="Odustani" @click="closeCreateDialog" />
-          <q-btn color="primary" label="Spremi" @click="createClan" />
+          <q-btn color="primary" label="Spremi" @click="saveClan" />
         </q-card-actions>
       </q-card>
     </q-dialog>
 
-
     <!-- TABLICA -->
     <q-card>
-      <q-card-section class="q-pa-md">
-        <div class="text-h6 q-mb-md">Članovi povjerenstva</div>
-        
-        <div v-if="clanovi.length === 0" class="text-center q-pa-lg" style="opacity: 0.7;">
-          <p>Nema dodanih članova.</p>
-        </div>
-
-        <q-table 
-          v-else
-          :rows="clanovi" 
-          :columns="columns" 
-          row-key="ID_povjerenstva_po_zaposleniku" 
-          flat 
-          bordered
-          separator="cell"
-          class="responsive-table"
-        >
-          <!-- Custom template za stupac "Član" -->
-          <template #body-cell-clan="props">
-            <q-td :props="props">
-              <strong>{{ props.row.clan_ime }} {{ props.row.clan_prezime }}</strong>
-            </q-td>
-          </template>
-        </q-table>
-      </q-card-section>
+      <q-table
+        :rows="clanovi"
+        :columns="columns"
+        row-key="ID_povjerenstva_po_zaposleniku"
+        flat
+        bordered
+        separator="cell"
+      >
+        <!-- EDIT IKONICA PO RETKU -->
+        <template v-slot:body-cell-akcije="props">
+          <q-td :props="props" class="text-center">
+            <q-btn
+              v-if="editMode && isAktivnaGodina"
+              flat
+              round
+              dense
+              icon="edit"
+              color="primary"
+              @click.stop="openEditClanDialog(props.row)"
+              aria-label="Uredi člana"
+            />
+          </q-td>
+        </template>
+      </q-table>
     </q-card>
 
   </q-page>
@@ -135,7 +163,7 @@
 
 <script setup lang="ts">
 
-import { ref, onMounted } from "vue";
+import { ref, onMounted, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import axios from "axios";
 
@@ -150,6 +178,11 @@ const nazivPovjerenstva = ref<string>("");
 const opisPovjerenstva = ref<string>("");
 const isAktivnaGodina = ref<boolean>(false);
 
+// edit mode / edit state
+const editMode = ref<boolean>(false);
+const isEditing = ref<boolean>(false);
+const editingPpzId = ref<number | null>(null);
+
 interface ClanRow {
   ID_povjerenstva_po_zaposleniku: number;
   uloga_clana: string;
@@ -160,6 +193,10 @@ interface ClanRow {
   clan_prezime: string;
   zamjena_ime: string | null;
   zamjena_prezime: string | null;
+
+  // potrebno za edit prefill
+  ID_zaposlenika?: number;
+  zamijenjeni_clan?: number | null;
 }
 
 type ZaposlenikDTO = {
@@ -182,7 +219,8 @@ const ulogeOptions = ["Predsjednik", "Član", "Zamjenik predsjednika"];
 
 const zaposleniciOptions = ref<Array<{ label: string; value: number }>>([]);
 
-const columns = [
+// columns + akcije na kraj
+const baseColumns = [
   {
     name: "clan",
     label: "Član",
@@ -192,31 +230,33 @@ const columns = [
     name: "zamjena",
     label: "Zamijenjeni član",
     field: (row: ClanRow) =>
-      row.zamjena_ime
-        ? `${row.zamjena_ime} ${row.zamjena_prezime}`
-        : "-"
+      row.zamjena_ime ? `${row.zamjena_ime} ${row.zamjena_prezime}` : "-"
   },
-  {
-    name: "uloga",
-    label: "Uloga",
-    field: "uloga_clana"
-  },
-  {
-    name: "pocetak",
-    label: "Početak mandata",
-    field: "pocetak_mandata"
-  },
-  {
-    name: "kraj",
-    label: "Kraj mandata",
-    field: "kraj_mandata"
-  },
-  {
-    name: "sati",
-    label: "Procjena sati",
-    field: "procjena_radnih_sati"
-  }
+  { name: "uloga", label: "Uloga", field: "uloga_clana" },
+  { name: "pocetak", label: "Početak mandata", field: "pocetak_mandata" },
+  { name: "kraj", label: "Kraj mandata", field: "kraj_mandata" },
+  { name: "sati", label: "Procjena sati", field: "procjena_radnih_sati" },
 ];
+
+const columns = computed(() => {
+  // akcije samo kad je editMode true (da se stupac ne prikazuje stalno)
+  if (!editMode.value) return baseColumns;
+  return [
+    ...baseColumns,
+    { name: "akcije", label: "", field: () => "", align: "center" as const }
+  ];
+});
+
+// helper za usporedbu datuma u formatu DD.MM.YYYY.
+const toDate = (s: string) => {
+  // očekuje "DD.MM.YYYY."
+  const clean = s.replace(/\s/g, "");
+  const parts = clean.split(".");
+  const d = Number(parts[0]);
+  const m = Number(parts[1]);
+  const y = Number(parts[2]);
+  return new Date(y, m - 1, d);
+};
 
 // dohvat zaposlenika za dropdown (bez headers: undefined)
 const loadZaposleniciOptions = async () => {
@@ -251,6 +291,8 @@ const openCreateDialog = async () => {
   if (zaposleniciOptions.value.length === 0) {
     await loadZaposleniciOptions();
   }
+  isEditing.value = false;
+  editingPpzId.value = null;
   showCreateDialog.value = true;
 };
 
@@ -262,43 +304,73 @@ const closeCreateDialog = () => {
   newClanKraj.value = "";
   newClanSati.value = "";
   newClanZamijenjeni.value = null;
+
+  isEditing.value = false;
+  editingPpzId.value = null;
 };
 
-//  refresh članova (isti GET kao i gore)
-const refreshClanovi = async () => {
-  try {
-    const token = localStorage.getItem("token");
-    const config = token
-      ? { headers: { Authorization: `Bearer ${token}` } }
-      : {};
-
-    const id = String(route.params.idPovjerenstva);
-    const clanRes = await axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`, config);
-    clanovi.value = clanRes.data;
-  } catch (err) {
-    console.error("REFRESH CLANOVI ERROR:", err);
-  }
-};
-
-//  create član/mandat
-const createClan = async () => {
-  const idPovjerenstva = Number(route.params.idPovjerenstva);
+const toggleEditMode = () => {
   if (!isAktivnaGodina.value) {
-    window.alert("Dodavanje članova moguće je samo u aktivnoj akademskoj godini.");
+    window.alert("Uređivanje članova moguće je samo u aktivnoj akademskoj godini.");
     return;
   }
-  if (newClanKraj.value.trim() && newClanKraj.value < newClanPocetak.value) {
-    window.alert("Kraj mandata ne može biti prije početka mandata.");
+  editMode.value = !editMode.value;
+};
+
+//  refresh članova
+const refreshClanovi = async () => {
+  const id = String(route.params.idPovjerenstva);
+  const clanRes = await axios.get(
+    `http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`
+  );
+  clanovi.value = clanRes.data;
+};
+
+// otvori edit dialog za postojeći red
+const openEditClanDialog = async (row: ClanRow) => {
+  if (!isAktivnaGodina.value) {
+    window.alert("Uređivanje članova moguće je samo u aktivnoj akademskoj godini.");
+    return;
+  }
+  if (zaposleniciOptions.value.length === 0) {
+    await loadZaposleniciOptions();
+  }
+
+  // Ako backend još ne vraća ID_zaposlenika, ne možemo editirati korektno.
+  if (row.ID_zaposlenika == null) {
+    window.alert("Backend ne vraća ID_zaposlenika za člana. Treba dopuniti API response.");
     return;
   }
 
-  if (!idPovjerenstva) {
-    window.alert("Ne mogu odrediti ID povjerenstva.");
+  isEditing.value = true;
+  editingPpzId.value = Number(row.ID_povjerenstva_po_zaposleniku);
+
+  newClanIdZaposlenika.value = Number(row.ID_zaposlenika);
+  newClanUloga.value = row.uloga_clana ?? null;
+  newClanPocetak.value = row.pocetak_mandata ?? "";
+  newClanKraj.value = row.kraj_mandata ?? "";
+  newClanSati.value = row.procjena_radnih_sati ?? "";
+  newClanZamijenjeni.value = row.zamijenjeni_clan != null ? Number(row.zamijenjeni_clan) : null;
+
+  showCreateDialog.value = true;
+};
+
+// create/update član/mandat
+const saveClan = async () => {
+  const idPovjerenstva = Number(route.params.idPovjerenstva);
+
+  if (!isAktivnaGodina.value) {
+    window.alert("Dodavanje/uređivanje članova moguće je samo u aktivnoj akademskoj godini.");
     return;
   }
 
   if (!newClanIdZaposlenika.value) {
     window.alert("Odaberi zaposlenika.");
+    return;
+  }
+
+  if (!newClanUloga.value || !String(newClanUloga.value).trim()) {
+    window.alert("Odaberi ulogu.");
     return;
   }
 
@@ -312,24 +384,54 @@ const createClan = async () => {
     return;
   }
 
-  try {
-    const res = await axios.post("http://localhost:3000/api/povjerenstva-po-zaposleniku", {
-      ID_povjerenstva: idPovjerenstva,
-      ID_zaposlenika: newClanIdZaposlenika.value,
-      uloga_clana: newClanUloga.value,
-      pocetak_mandata: newClanPocetak.value.trim(),
-      kraj_mandata: newClanKraj.value.trim(),
-      procjena_radnih_sati: newClanSati.value.toString().trim(),
-      zamijenjeni_clan: newClanZamijenjeni.value,
-    });
+  // provjera datuma
+  if (newClanKraj.value.trim()) {
+    try {
+      if (toDate(newClanKraj.value) < toDate(newClanPocetak.value)) {
+        window.alert("Kraj mandata ne može biti prije početka mandata.");
+        return;
+      }
+    } catch {
+      // ako format nije dobar, preskoči ili javi korisniku
+      window.alert("Neispravan format datuma.");
+      return;
+    }
+  }
 
-    window.alert(res.data?.message || "Član povjerenstva je uspješno dodan!");
+  try {
+    if (isEditing.value && editingPpzId.value) {
+      const res = await axios.put(
+        `http://localhost:3000/api/povjerenstva-po-zaposleniku/${editingPpzId.value}`,
+        {
+          uloga_clana: newClanUloga.value,
+          pocetak_mandata: newClanPocetak.value.trim(),
+          kraj_mandata: newClanKraj.value.trim(),
+          procjena_radnih_sati: newClanSati.value.toString().trim(),
+          zamijenjeni_clan: newClanZamijenjeni.value,
+        }
+      );
+
+      window.alert(res.data?.message || "Član povjerenstva je uspješno ažuriran!");
+    } else {
+      const res = await axios.post("http://localhost:3000/api/povjerenstva-po-zaposleniku", {
+        ID_povjerenstva: idPovjerenstva,
+        ID_zaposlenika: newClanIdZaposlenika.value,
+        uloga_clana: newClanUloga.value,
+        pocetak_mandata: newClanPocetak.value.trim(),
+        kraj_mandata: newClanKraj.value.trim(),
+        procjena_radnih_sati: newClanSati.value.toString().trim(),
+        zamijenjeni_clan: newClanZamijenjeni.value,
+      });
+
+      window.alert(res.data?.message || "Član povjerenstva je uspješno dodan!");
+    }
+
     closeCreateDialog();
     await refreshClanovi();
   } catch (err: unknown) {
-    console.error("CREATE CLAN ERROR:", err);
+    console.error("SAVE CLAN ERROR:", err);
 
-    let msg = "Greška pri dodavanju člana.";
+    let msg = isEditing.value ? "Greška pri uređivanju člana." : "Greška pri dodavanju člana.";
     if (axios.isAxiosError(err) && err.response) {
       msg = err.response.data?.error || msg;
     }
@@ -340,14 +442,10 @@ const createClan = async () => {
 
 onMounted(async () => {
   const id = String(route.params.idPovjerenstva);
-  const token = localStorage.getItem("token");
-  const config = token
-    ? { headers: { Authorization: `Bearer ${token}` } }
-    : {};
 
   const [clanRes, detaljiRes] = await Promise.all([
-    axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`, config),
-    axios.get(`http://localhost:3000/api/povjerenstva/detalji/${id}`, config)
+    axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`),
+    axios.get(`http://localhost:3000/api/povjerenstva/detalji/${id}`)
   ]);
 
   clanovi.value = clanRes.data;
@@ -391,54 +489,14 @@ const goBack = () => router.back();
 /* NASLOVI STUPACA */
 :deep(.q-table thead th) {
   font-weight: bold;
-  font-size: 16px;
+  font-size: 17px;
   background-color: #f5f5f5;
-  color: #333;
-  padding: 12px 8px;
+  text-align: center;
 }
 
 /* Vrijednosti u tablici */
 :deep(.q-table td) {
-  font-size: 14px;
-  padding: 10px 8px;
-}
-
-/* Redovi tablice */
-:deep(.q-table tbody tr) {
-  transition: background-color 0.2s ease;
-}
-
-:deep(.q-table tbody tr:hover) {
-  background-color: #f9f9f9;
-}
-
-/* Responsivna tablica */
-.responsive-table {
-  width: 100%;
-  overflow-x: auto;
-}
-
-@media (max-width: 768px) {
-  :deep(.q-table thead th) {
-    font-size: 13px;
-    padding: 8px 4px;
-  }
-
-  :deep(.q-table td) {
-    font-size: 12px;
-    padding: 8px 4px;
-  }
-}
-
-@media (max-width: 600px) {
-  :deep(.q-table thead th) {
-    font-size: 11px;
-    padding: 6px 2px;
-  }
-
-  :deep(.q-table td) {
-    font-size: 11px;
-    padding: 6px 2px;
-  }
+  font-size: 16px;
+  text-align: left;
 }
 </style>

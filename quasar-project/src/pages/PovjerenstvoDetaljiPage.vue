@@ -101,10 +101,31 @@
 
     <!-- TABLICA -->
     <q-card>
-      <q-table :rows="clanovi" :columns="columns" row-key="ID_povjerenstva_po_zaposleniku" flat bordered
-        separator="cell" hide-pagination>
+      <q-card-section class="q-pa-md">
+        <div class="text-h6 q-mb-md">Članovi povjerenstva</div>
+        
+        <div v-if="clanovi.length === 0" class="text-center q-pa-lg" style="opacity: 0.7;">
+          <p>Nema dodanih članova.</p>
+        </div>
 
-      </q-table>
+        <q-table 
+          v-else
+          :rows="clanovi" 
+          :columns="columns" 
+          row-key="ID_povjerenstva_po_zaposleniku" 
+          flat 
+          bordered
+          separator="cell"
+          class="responsive-table"
+        >
+          <!-- Custom template za stupac "Član" -->
+          <template #body-cell-clan="props">
+            <q-td :props="props">
+              <strong>{{ props.row.clan_ime }} {{ props.row.clan_prezime }}</strong>
+            </q-td>
+          </template>
+        </q-table>
+      </q-card-section>
     </q-card>
 
   </q-page>
@@ -245,9 +266,18 @@ const closeCreateDialog = () => {
 
 //  refresh članova (isti GET kao i gore)
 const refreshClanovi = async () => {
-  const id = String(route.params.idPovjerenstva);
-  const clanRes = await axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`);
-  clanovi.value = clanRes.data;
+  try {
+    const token = localStorage.getItem("token");
+    const config = token
+      ? { headers: { Authorization: `Bearer ${token}` } }
+      : {};
+
+    const id = String(route.params.idPovjerenstva);
+    const clanRes = await axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`, config);
+    clanovi.value = clanRes.data;
+  } catch (err) {
+    console.error("REFRESH CLANOVI ERROR:", err);
+  }
 };
 
 //  create član/mandat
@@ -296,9 +326,6 @@ const createClan = async () => {
     window.alert(res.data?.message || "Član povjerenstva je uspješno dodan!");
     closeCreateDialog();
     await refreshClanovi();
-    setTimeout(() => {
-      void refreshClanovi();
-    }, 100);
   } catch (err: unknown) {
     console.error("CREATE CLAN ERROR:", err);
 
@@ -311,13 +338,16 @@ const createClan = async () => {
 };
 
 
-
 onMounted(async () => {
   const id = String(route.params.idPovjerenstva);
+  const token = localStorage.getItem("token");
+  const config = token
+    ? { headers: { Authorization: `Bearer ${token}` } }
+    : {};
 
   const [clanRes, detaljiRes] = await Promise.all([
-    axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`),
-    axios.get(`http://localhost:3000/api/povjerenstva/detalji/${id}`)
+    axios.get(`http://localhost:3000/api/povjerenstva-po-zaposleniku/povjerenstvo/${id}`, config),
+    axios.get(`http://localhost:3000/api/povjerenstva/detalji/${id}`, config)
   ]);
 
   clanovi.value = clanRes.data;
@@ -361,14 +391,54 @@ const goBack = () => router.back();
 /* NASLOVI STUPACA */
 :deep(.q-table thead th) {
   font-weight: bold;
-  font-size: 17px;
+  font-size: 16px;
   background-color: #f5f5f5;
-  text-align: center;
+  color: #333;
+  padding: 12px 8px;
 }
 
 /* Vrijednosti u tablici */
 :deep(.q-table td) {
-  font-size: 16px;
-  text-align: left;
+  font-size: 14px;
+  padding: 10px 8px;
+}
+
+/* Redovi tablice */
+:deep(.q-table tbody tr) {
+  transition: background-color 0.2s ease;
+}
+
+:deep(.q-table tbody tr:hover) {
+  background-color: #f9f9f9;
+}
+
+/* Responsivna tablica */
+.responsive-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+@media (max-width: 768px) {
+  :deep(.q-table thead th) {
+    font-size: 13px;
+    padding: 8px 4px;
+  }
+
+  :deep(.q-table td) {
+    font-size: 12px;
+    padding: 8px 4px;
+  }
+}
+
+@media (max-width: 600px) {
+  :deep(.q-table thead th) {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
+
+  :deep(.q-table td) {
+    font-size: 11px;
+    padding: 6px 2px;
+  }
 }
 </style>

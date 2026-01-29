@@ -2,49 +2,44 @@
   <q-page class="q-pa-md">
 
     <!-- STRELICA NAZAD -->
-     <q-btn flat round dense icon="arrow_back" @click="goBack" />
+    <q-btn flat round dense icon="arrow_back" @click="goBack" />
     <!-- HEADER - AK.GOD. ORG.JED, POVJERENSTVO -->
     <div class="header-block">
 
-    <div class="header-title">
+      <div class="header-title">
         Akademska godina: {{ akademskaGodina }}
-    </div>
+      </div>
 
-    <div class="header-title">
+      <div class="header-title">
         {{ nazivOrgJed }}
-    </div>
+      </div>
 
-    <div class="header-title header-main">
+      <div class="header-title header-main">
         {{ nazivPovjerenstva }}
-    </div>
+      </div>
 
     </div>
 
     <!-- OPIS -->
     <q-card class="q-mb-lg">
-    <q-card-section>
+      <q-card-section>
         <div class="q-mt-sm opis-povjerenstva text-weight-bold">
-        Opis povjerenstva
+          Opis povjerenstva
         </div>
         <div class="q-mt-sm opis-povjerenstva">
-        {{ opisPovjerenstva }}
+          {{ opisPovjerenstva }}
         </div>
-    </q-card-section>
+      </q-card-section>
     </q-card>
 
     <!--  GUMB ZA DODAVANJE ČLANA -->
-<div class="row justify-end q-mb-md">
-  <q-btn
-    v-if="isAktivnaGodina"
-    color="primary"
-    label="Dodaj člana"
-    @click="openCreateDialog"
-  />
+    <div class="row justify-end q-mb-md">
+      <q-btn v-if="isAktivnaGodina" color="primary" label="Dodaj člana" @click="openCreateDialog" />
 
-  <div v-else class="text-center full-width" style="opacity: 0.8;">
-    Dodavanje članova moguće je samo u akademskoj godini.
-  </div>
-</div>
+      <div v-else class="text-center full-width" style="opacity: 0.8;">
+        Dodavanje članova moguće je samo u akademskoj godini.
+      </div>
+    </div>
 
     <!-- DIALOG ZA DODAVANJE ČLANA -->
     <q-dialog v-model="showCreateDialog">
@@ -54,84 +49,46 @@
         </q-card-section>
 
         <q-card-section class="q-gutter-md">
-          <q-select
-            v-model="newClanIdZaposlenika"
-            :options="zaposleniciOptions"
-            option-value="value"
-            option-label="label"
-            emit-value
-            map-options
-            label="Zaposlenik"
-            filled
-          />
+          <q-select v-model="newClanIdZaposlenika" :options="zaposleniciOptions" option-value="value"
+            option-label="label" emit-value map-options label="Zaposlenik" filled />
 
-          <q-select
-            v-model="newClanUloga"
-            :options="ulogeOptions"
-            label="Uloga"
-            filled
-          />
+          <q-select v-model="newClanUloga" :options="ulogeOptions" label="Uloga" filled />
 
           <!-- POČETAK MANDATA -->
-<q-input
-  v-model="newClanPocetak"
-  label="Početak mandata"
-  filled
-  readonly
->
-  <template #append>
-    <q-icon name="event" class="cursor-pointer">
-      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-        <q-date v-model="newClanPocetak" mask="DD.MM.YYYY.">
-          <div class="row items-center justify-end q-gutter-sm q-pa-sm">
-            <q-btn flat label="Zatvori" v-close-popup />
-          </div>
-        </q-date>
-      </q-popup-proxy>
-    </q-icon>
-  </template>
-</q-input>
+          <q-input v-model="newClanPocetak" label="Početak mandata" filled readonly>
+            <template #append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="newClanPocetak" mask="DD.MM.YYYY.">
+                    <div class="row items-center justify-end q-gutter-sm q-pa-sm">
+                      <q-btn flat label="Zatvori" v-close-popup />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
 
-<!-- KRAJ MANDATA (OPCIONALNO) -->
-<q-input
-  v-model="newClanKraj"
-  label="Kraj mandata (opcionalno)"
-  filled
-  readonly
-  clearable
->
-  <template #append>
-    <q-icon name="event" class="cursor-pointer">
-      <q-popup-proxy cover transition-show="scale" transition-hide="scale">
-        <q-date v-model="newClanKraj" mask="DD.MM.YYYY.">
-          <div class="row items-center justify-end q-gutter-sm q-pa-sm">
-            <q-btn flat label="Očisti" @click="newClanKraj = ''" v-close-popup />
-            <q-btn flat label="Zatvori" v-close-popup />
-          </div>
-        </q-date>
-      </q-popup-proxy>
-    </q-icon>
-  </template>
-</q-input>
+          <!-- KRAJ MANDATA (OPCIONALNO) -->
+          <q-input v-model="newClanKraj" label="Kraj mandata (opcionalno)" filled readonly clearable>
+            <template #append>
+              <q-icon name="event" class="cursor-pointer">
+                <q-popup-proxy cover transition-show="scale" transition-hide="scale">
+                  <q-date v-model="newClanKraj" mask="DD.MM.YYYY.">
+                    <div class="row items-center justify-end q-gutter-sm q-pa-sm">
+                      <q-btn flat label="Očisti" @click="newClanKraj = ''" v-close-popup />
+                      <q-btn flat label="Zatvori" v-close-popup />
+                    </div>
+                  </q-date>
+                </q-popup-proxy>
+              </q-icon>
+            </template>
+          </q-input>
 
-          <q-input
-            v-model="newClanSati"
-            label="Procjena radnih sati"
-            type="number"
-            filled
-          />
+          <q-input v-model="newClanSati" label="Procjena radnih sati" type="number" filled />
 
-          <q-select
-            v-model="newClanZamijenjeni"
-            :options="zaposleniciOptions"
-            option-value="value"
-            option-label="label"
-            emit-value
-            map-options
-            label="Zamjenjuje (opcionalno)"
-            filled
-            clearable
-          />
+          <q-select v-model="newClanZamijenjeni" :options="zaposleniciOptions" option-value="value" option-label="label"
+            emit-value map-options label="Zamjenjuje (opcionalno)" filled clearable />
         </q-card-section>
 
         <q-card-actions align="right">
@@ -144,22 +101,14 @@
 
     <!-- TABLICA -->
     <q-card>
-      <q-table
-        
-        :rows="clanovi"
-        :columns="columns"
-        row-key="ID_povjerenstva_po_zaposleniku"
-        flat
-        bordered
-        separator="cell"
-        hide-pagination
-        >
-        
-    </q-table>  
+      <q-table :rows="clanovi" :columns="columns" row-key="ID_povjerenstva_po_zaposleniku" flat bordered
+        separator="cell" hide-pagination>
+
+      </q-table>
     </q-card>
 
   </q-page>
-  
+
 
 </template>
 
@@ -274,7 +223,7 @@ const loadZaposleniciOptions = async () => {
 
 //  otvori/zatvori dialog
 const openCreateDialog = async () => {
-    if (!isAktivnaGodina.value) {
+  if (!isAktivnaGodina.value) {
     window.alert("Dodavanje članova moguće je samo u aktivnoj akademskoj godini.");
     return;
   }
@@ -304,14 +253,14 @@ const refreshClanovi = async () => {
 //  create član/mandat
 const createClan = async () => {
   const idPovjerenstva = Number(route.params.idPovjerenstva);
-    if (!isAktivnaGodina.value) {
+  if (!isAktivnaGodina.value) {
     window.alert("Dodavanje članova moguće je samo u aktivnoj akademskoj godini.");
     return;
   }
   if (newClanKraj.value.trim() && newClanKraj.value < newClanPocetak.value) {
-  window.alert("Kraj mandata ne može biti prije početka mandata.");
-  return;
-}
+    window.alert("Kraj mandata ne može biti prije početka mandata.");
+    return;
+  }
 
   if (!idPovjerenstva) {
     window.alert("Ne mogu odrediti ID povjerenstva.");
@@ -347,6 +296,9 @@ const createClan = async () => {
     window.alert(res.data?.message || "Član povjerenstva je uspješno dodan!");
     closeCreateDialog();
     await refreshClanovi();
+    setTimeout(() => {
+      void refreshClanovi();
+    }, 100);
   } catch (err: unknown) {
     console.error("CREATE CLAN ERROR:", err);
 
@@ -383,7 +335,6 @@ const goBack = () => router.back();
 </script>
 
 <style scoped lang="scss">
-
 //header dijelovi
 
 .header-block {
@@ -403,7 +354,7 @@ const goBack = () => router.back();
 }
 
 .opis-povjerenstva {
-  font-size: 18px;  
+  font-size: 18px;
   line-height: 1.5;
 }
 
@@ -417,8 +368,7 @@ const goBack = () => router.back();
 
 /* Vrijednosti u tablici */
 :deep(.q-table td) {
-  font-size: 16px; 
-  text-align: left; 
+  font-size: 16px;
+  text-align: left;
 }
-
 </style>
